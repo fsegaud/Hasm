@@ -1,0 +1,25 @@
+; test file
+
+; vector
+mov r0 0
+mov r1 -1
+mov r2 2.5
+
+; magnitude
+mul r3 r0 r0
+mul r4 r1 r1
+mul r5 r2 r2
+mov r6 r3
+add r6 r6 r4
+add r6 r6 r5
+sqrt r6 r6
+
+; normalize
+div r0 r0 r6
+div r1 r1 r6
+div r2 r2 r6
+
+; test
+assert r0 0
+assert r1 -0.37139067
+assert r2 0.9284767
