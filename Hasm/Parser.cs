@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 // TODO: Jumps
 
@@ -61,15 +62,17 @@ namespace Hasm
     
     public class Processor
     {
+        private readonly int _frequencyHz;
         private readonly float[] _registries;
         private readonly float[] _stack;
 
         private uint _stackPointer = 0;
 
-        public Processor(int numRegistries = 8, int stackLength = 32)
+        public Processor(int numRegistries = 8, int stackLength = 32, int frequencyHz = 0 /* not simulated */)
         {
             _registries = new float[numRegistries];
             _stack = new float[stackLength];
+            _frequencyHz = frequencyHz;
         }
         
         public Result Run(Program program, Action<string>? debugCallback = null, DebugData debugData = DebugData.None)
@@ -161,6 +164,9 @@ namespace Hasm
                 
                 if ((debugData & DebugData.Memory) > 0)
                     debugCallback?.Invoke($"processor > Reg[{instruction.Line}]: " + DumpMemory());
+                
+                if (_frequencyHz > 0)
+                    Thread.Sleep(1000 / _frequencyHz);
             }
 
             return Result.Success();
