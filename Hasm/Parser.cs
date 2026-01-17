@@ -1,10 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-// TODO: Stack
-// TODO: Memory
 // TODO: Jumps
 
 namespace Hasm
@@ -22,8 +20,17 @@ namespace Hasm
         RegistryOutOfBound,
         DivisionByZero,
         NaN,
+        StackOverflow,
         
         AssertFailed = 300,
+    }
+
+    [System.Flags]
+    public enum DebugData
+    {
+        None = 0,
+        Instruction = 1,
+        Memory = 2
     }
 
     public struct Result
@@ -55,13 +62,17 @@ namespace Hasm
     public class Processor
     {
         private readonly float[] _registries;
+        private readonly float[] _stack;
 
-        public Processor(int numRegistries = 4)
+        private uint _stackPointer = 0;
+
+        public Processor(int numRegistries = 8, int stackLength = 32)
         {
             _registries = new float[numRegistries];
+            _stack = new float[stackLength];
         }
         
-        public Result Run(Program program, Action<string>? debugCallback = null)
+        public Result Run(Program program, Action<string>? debugCallback = null, DebugData debugData = DebugData.None)
         {
             for (int i = 0; i < program.Instructions.Length; i++)
             {
@@ -118,6 +129,24 @@ namespace Hasm
                         _registries[instruction.DestinationRegistry] = (float)Math.Sqrt(leftOperandValue);
                         break;
                     
+                    case Operation.Push:
+                        if (_stackPointer >= _stack.Length)
+                            return new Result(Error.StackOverflow, instruction);
+                        _stack[_stackPointer++] = _registries[instruction.DestinationRegistry];
+                        break;
+                    
+                    case Operation.Pop:
+                        if (_stackPointer == 0)
+                            return new Result(Error.StackOverflow, instruction);
+                        _registries[instruction.DestinationRegistry] = _stack[--_stackPointer];
+                        break;
+                    
+                    case Operation.Peek:
+                        if (_stackPointer == 0)
+                            return new Result(Error.StackOverflow, instruction);
+                        _registries[instruction.DestinationRegistry] = _stack[_stackPointer - 1];
+                        break;
+                    
                     case Operation.Assert:
                         if (Math.Abs(_registries[instruction.DestinationRegistry] - leftOperandValue) > float.Epsilon)
                             return new Result(Error.AssertFailed, instruction);
@@ -127,8 +156,11 @@ namespace Hasm
                         return new Result(Error.OperationNotImplemented, instruction);
                 }
                 
-                debugCallback?.Invoke($"processor > Exe[{instruction.Line}]: " + instruction);
-                debugCallback?.Invoke($"processor > Reg[{instruction.Line}]: [ " + string.Join(" ", _registries) + " ]");
+                if ((debugData & DebugData.Instruction) > 0)
+                    debugCallback?.Invoke($"processor > Exe[{instruction.Line}]: " + instruction);
+                
+                if ((debugData & DebugData.Memory) > 0)
+                    debugCallback?.Invoke($"processor > Reg[{instruction.Line}]: " + DumpMemory());
             }
 
             return Result.Success();
@@ -141,13 +173,15 @@ namespace Hasm
 
         public string DumpMemory()
         {
-            return $"Registries: {string.Join(" ", _registries)}";
+            return $"Registries: {string.Join(" ", _registries)} " +
+                   $"Stack: {string.Join(" ", _stack)} " +
+                   $"Sp: {_stackPointer}";
         }
     }
 
     public class Compiler
     {
-        public Result Compile(string input, ref Program program, Action<string>? debugCallback = null)
+        public Result Compile(string input, ref Program program, Action<string>? debugCallback = null, DebugData debugData = DebugData.None)
         {
             List<Instruction> instructions = new List<Instruction>();
             
@@ -170,7 +204,7 @@ namespace Hasm
                 
                 // Comments.
 
-                regex = new Regex(@".*(?<com>;.*)"); // TODO: One Regex object per expression.
+                regex = new Regex(@".*(?<com>[;#].*)"); // TODO: One Regex object per expression.
                 match = regex.Match(lines[index]);
 
                 if (match.Success)
@@ -201,7 +235,41 @@ namespace Hasm
                     }
 
                     instructions.Add(instruction);
-                    debugCallback?.Invoke("compiler > " + instruction);
+                    
+                    if ((debugData & DebugData.Instruction) > 0)
+                        debugCallback?.Invoke("compiler > " + instruction);
+
+                    continue;
+                }
+                
+                // Registry operations.
+                
+                regex = new Regex(@"^(?<opt>push|pop|peek)\s+(?<opd>r\d+\b)$");
+                match = regex.Match(lines[index]);
+
+                if (match.Success)
+                {
+                    string opt = match.Groups["opt"].Value;
+                    string opd = match.Groups["opd"].Value;
+                    
+                    Instruction instruction = default;
+                    instruction.RawText = lines[index];
+                    instruction.Line = index + 1;
+                    
+                    switch (opt)
+                    {
+                        case "push": instruction.Operation = Operation.Push; break;
+                        case "pop": instruction.Operation = Operation.Pop; break;
+                        case "peek": instruction.Operation = Operation.Peek; break;
+                        default: return new Result(Error.OperationNotSupported, instruction);
+                    }
+                    
+                    instruction.DestinationRegistry = int.Parse(opd.Substring(1));
+                    
+                    instructions.Add(instruction);
+                    
+                    if ((debugData & DebugData.Instruction) > 0)
+                        debugCallback?.Invoke("compiler > " + instruction);
 
                     continue;
                 }
@@ -244,7 +312,9 @@ namespace Hasm
                     }
                     
                     instructions.Add(instruction);
-                    debugCallback?.Invoke("compiler > " + instruction);
+                    
+                    if ((debugData & DebugData.Instruction) > 0)
+                        debugCallback?.Invoke("compiler > " + instruction);
 
                     continue;
                 }
@@ -302,7 +372,9 @@ namespace Hasm
                     }
 
                     instructions.Add(instruction);
-                    debugCallback?.Invoke("compiler > " + instruction);
+                    
+                    if ((debugData & DebugData.Instruction) > 0)
+                        debugCallback?.Invoke("compiler > " + instruction);
 
                     continue;
                 }
@@ -330,6 +402,9 @@ namespace Hasm
         Multiply,
         Divide,
         SquareRoot,
+        Push,
+        Pop,
+        Peek,
         
         Assert = 100,
     }

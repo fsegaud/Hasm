@@ -1,4 +1,4 @@
-namespace HasmTest;
+﻿namespace HasmTest;
 
 class Program
 {
@@ -15,8 +15,8 @@ class Program
                                     $"'{result.RawInstruction}' at line {result.Line}");
         }
         
-        Hasm.Processor processor = new Hasm.Processor(8);
-        result = processor.Run(program, DebugCallback);
+        Hasm.Processor processor = new Hasm.Processor(numRegistries:4, stackLength: 8);
+        result = processor.Run(program, DebugCallback, Hasm.DebugData.Instruction | Hasm.DebugData.Memory);
         if (result.Error != Hasm.Error.Success)
         {
             Console.Error.WriteLine(

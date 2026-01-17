@@ -1,25 +1,35 @@
-; test file
+# vector normalisation
 
-; vector
+# vector
 mov r0 0
 mov r1 -1
 mov r2 2.5
 
-; magnitude
-mul r3 r0 r0
-mul r4 r1 r1
-mul r5 r2 r2
-mov r6 r3
-add r6 r6 r4
-add r6 r6 r5
-sqrt r6 r6
+# backup
+push r0
+push r1
+push r2
 
-; normalize
-div r0 r0 r6
-div r1 r1 r6
-div r2 r2 r6
+# magnitude
+mul r0 r0 r0
+mul r1 r1 r1
+mul r2 r2 r2
+mov r3 r0
+add r3 r3 r1
+add r3 r3 r2
+sqrt r3 r3
 
-; test
+# restore
+pop r2
+pop r1
+pop r0
+
+# normalize
+div r0 r0 r3
+div r1 r1 r3
+div r2 r2 r3
+
+# test
 assert r0 0
 assert r1 -0.37139067
 assert r2 0.9284767
