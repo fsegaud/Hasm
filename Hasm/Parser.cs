@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -29,7 +29,7 @@ namespace Hasm
     public struct Result
     {
         public readonly Error Error;
-        public readonly string RawInstruction;
+        public readonly string? RawInstruction;
         public readonly int Line;
 
         internal static Result Success()
@@ -44,10 +44,10 @@ namespace Hasm
             Line = instruction.Line;
         }
         
-        internal Result(Error error, int line = 0)
+        internal Result(Error error, int line = 0, string? rawInstruction = null)
         {
             Error = error;
-            RawInstruction = string.Empty;
+            RawInstruction = rawInstruction;
             Line = line;
         }
     }
@@ -307,7 +307,7 @@ namespace Hasm
                     continue;
                 }
 
-                return new Result(Error.SyntaxError, index + 1);
+                return new Result(Error.SyntaxError, index + 1, lines[index]);
             }
 
             program.Instructions = instructions.ToArray();

@@ -1,4 +1,4 @@
-﻿namespace HasmTest;
+namespace HasmTest;
 
 class Program
 {
@@ -11,7 +11,8 @@ class Program
         var result = compiler.Compile(File.ReadAllText(sourceFile), ref program);
         if (result.Error != Hasm.Error.Success)
         {
-            Console.Error.WriteLine($"Compilation Error: {result.Error} ({result.Error:D}) at line {result.Line}");
+            Console.Error.WriteLine($"Compilation Error: {result.Error} ({result.Error:D}) " +
+                                    $"'{result.RawInstruction}' at line {result.Line}");
         }
         
         Hasm.Processor processor = new Hasm.Processor(8);
