@@ -25,6 +25,7 @@ namespace Hasm
         NaN,
         StackOverflow,
         InvalidJump,
+        LabelNotFound,
         
         AssertFailed = 900,
     }
@@ -126,7 +127,8 @@ namespace Hasm
         
         public Result Run(Program program, Action<string>? debugCallback = null, DebugData debugData = DebugData.None)
         {
-            for (int index = 0; index < program.Instructions.Length; index++)
+            bool breakLoop = false;
+            for (int index = 0; index < program.Instructions.Length && !breakLoop; index++)
             {
                 Instruction instruction = program.Instructions[index];
                 
@@ -234,6 +236,10 @@ namespace Hasm
                         
                         break;
                     }
+                    
+                    case Operation.Ret:
+                        breakLoop = true;
+                        break;
 
                     default:
                         return new Result(Error.OperationNotImplemented, instruction);
@@ -277,17 +283,36 @@ namespace Hasm
         public Result Compile(string input, ref Program program, Action<string>? debugCallback = null, DebugData debugData = DebugData.None)
         {
             List<Instruction> instructions = new List<Instruction>();
+            Dictionary<string, uint> labelToLine = new Dictionary<string, uint>();
             
             string[] lines = input.Split('\n');
+            
             for (var index = 0u; index < lines.Length; index++)
             {
-                // Pre-parse.
                 lines[index] =  lines[index].Trim();
-                
                 if (string.IsNullOrEmpty(lines[index]))
                     continue;
                 
-                //  Empty.
+                // Pre-parse: labels(1).
+                
+                Regex regex = new Regex(@"^(?<label>[A-Za-z_]+)\s*:$");
+                Match match = regex.Match(lines[index]);
+
+                if (match.Success)
+                {
+                    string label = match.Groups["label"].Value;
+                    uint jumpIndex = index + 2;
+                    
+                    labelToLine.Add(label, jumpIndex);
+                    lines[index] = string.Empty; // Consume.
+                }
+            }
+            
+            for (var index = 0u; index < lines.Length; index++)
+            {
+                // Empty lines.
+                if (string.IsNullOrEmpty(lines[index]))
+                    continue;
 
                 Regex regex = new Regex(@"^[\s\t]*$");
                 Match match = regex.Match(lines[index]);
@@ -295,6 +320,29 @@ namespace Hasm
                 if (match.Success)
                     continue;
                 
+                // Pre-parse: labels(2).
+                
+                regex = new Regex(@"^(?<opt>j|jra)\s+(?<label>[A-Za-z_]+\b)$");
+                match = regex.Match(lines[index]);
+
+                if (match.Success)
+                {
+                    string opt = match.Groups["opt"].Value;
+                    string label = match.Groups["label"].Value;
+                    
+                    regex = new Regex(@"^ra|r\d+$"); // registries are not labels.
+                    if (!regex.Match(label).Success)
+                    {
+                        uint jumpLine;
+                        if (!labelToLine.TryGetValue(label, out jumpLine))
+                            return new Result(Error.LabelNotFound, index + 1, lines[index]);
+
+                        lines[index] = $"{opt} {jumpLine}";
+                    }
+
+                    // Do not continue, instruction will be processed later.
+                }
+
                 // Comments.
 
                 regex = new Regex(@".*(?<com>[;#].*)"); // TODO: One Regex object per expression.
@@ -310,7 +358,7 @@ namespace Hasm
                 
                 // Self operations.
 
-                regex = new Regex(@"^(?<opt>nop)$");
+                regex = new Regex(@"^(?<opt>nop|ret)$");
                 match = regex.Match(lines[index]);
 
                 if (match.Success)
@@ -324,6 +372,7 @@ namespace Hasm
                     switch (opt)
                     {
                         case "nop": instruction.Operation = Operation.Nop; break;
+                        case "ret": instruction.Operation = Operation.Ret; break;
                         default: return new Result(Error.OperationNotSupported, instruction);
                     }
 
@@ -613,6 +662,29 @@ namespace Hasm
 
                 return new Result(Error.SyntaxError, index + 1, lines[index]);
             }
+            
+            // Special 'ret' instruction at end.
+            if (instructions.Count == 0 || instructions[^1].Operation != Operation.Ret)
+            {
+                Instruction instruction = new Instruction()
+                {
+                    RawText = "ret",
+                    Operation = Operation.Ret,
+                    Line = instructions.Count == 0 ? 0 : instructions[^1].Line + 3
+                };
+                    
+                instructions.Add(instruction);
+                
+                if ((debugData & DebugData.RawInstruction) > 0)
+                    debugCallback?.Invoke("compiler > " + instruction.RawText);
+                    
+                if ((debugData & DebugData.CompiledInstruction) > 0)
+                    debugCallback?.Invoke("compiler > " + instruction);
+                    
+                if ((debugData & DebugData.Separator) > 0)
+                    debugCallback?.Invoke("-------------------------------------------------------------------------" +
+                                          "-----------------------------------------------");
+            }
 
             program.Instructions = instructions.ToArray();
             
@@ -670,6 +742,8 @@ namespace Hasm
         JumpReturnAddress,
         
         Assert = 100,
+        
+        Ret = 1000,
     }
 
     internal enum OperandType

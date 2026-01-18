@@ -8,7 +8,7 @@ class Program
         
         Hasm.Compiler compiler = new Hasm.Compiler();
         Hasm.Program program = new Hasm.Program();
-        var result = compiler.Compile(File.ReadAllText(sourceFile), ref program);
+        var result = compiler.Compile(File.ReadAllText(sourceFile), ref program, DebugCallback, Hasm.DebugData.None);
         if (result.Error != Hasm.Error.Success)
         {
             Console.Error.WriteLine($"Compilation Error: {result.Error} ({result.Error:D}) " +
