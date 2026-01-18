@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.RegularExpressions;
 using System.Threading;
 
@@ -31,9 +33,10 @@ namespace Hasm
     public enum DebugData
     {
         None                = 0,
-        RawInstruction      = 1 << 0,
-        CompiledInstruction = 1 << 1,
-        Memory              = 1 << 2,
+        Binary              = 1 << 0,
+        RawInstruction      = 1 << 1,
+        CompiledInstruction = 1 << 2,
+        Memory              = 1 << 3,
         Separator           = 1 << 30,
         All                 = ~0
     }
@@ -326,8 +329,15 @@ namespace Hasm
 
                     instructions.Add(instruction);
                     
+                    if ((debugData & DebugData.RawInstruction) > 0)
+                        debugCallback?.Invoke("compiler > " + instruction.RawText);
+                    
                     if ((debugData & DebugData.CompiledInstruction) > 0)
                         debugCallback?.Invoke("compiler > " + instruction);
+                    
+                    if ((debugData & DebugData.Separator) > 0)
+                        debugCallback?.Invoke("-------------------------------------------------------------------------" +
+                                              "-----------------------------------------------");
 
                     continue;
                 }
@@ -375,8 +385,15 @@ namespace Hasm
                     
                     instructions.Add(instruction);
                     
+                    if ((debugData & DebugData.RawInstruction) > 0)
+                        debugCallback?.Invoke("compiler > " + instruction.RawText);
+                    
                     if ((debugData & DebugData.CompiledInstruction) > 0)
                         debugCallback?.Invoke("compiler > " + instruction);
+                    
+                    if ((debugData & DebugData.Separator) > 0)
+                        debugCallback?.Invoke("-------------------------------------------------------------------------" +
+                                              "-----------------------------------------------");
 
                     continue;
                 }
@@ -419,8 +436,15 @@ namespace Hasm
                     
                     instructions.Add(instruction);
                     
+                    if ((debugData & DebugData.RawInstruction) > 0)
+                        debugCallback?.Invoke("compiler > " + instruction.RawText);
+                    
                     if ((debugData & DebugData.CompiledInstruction) > 0)
                         debugCallback?.Invoke("compiler > " + instruction);
+                    
+                    if ((debugData & DebugData.Separator) > 0)
+                        debugCallback?.Invoke("-------------------------------------------------------------------------" +
+                                              "-----------------------------------------------");
 
                     continue;
                 }
@@ -485,8 +509,15 @@ namespace Hasm
                     
                     instructions.Add(instruction);
                     
+                    if ((debugData & DebugData.RawInstruction) > 0)
+                        debugCallback?.Invoke("compiler > " + instruction.RawText);
+                    
                     if ((debugData & DebugData.CompiledInstruction) > 0)
                         debugCallback?.Invoke("compiler > " + instruction);
+                    
+                    if ((debugData & DebugData.Separator) > 0)
+                        debugCallback?.Invoke("-------------------------------------------------------------------------" +
+                                              "-----------------------------------------------");
 
                     continue;
                 }
@@ -567,8 +598,15 @@ namespace Hasm
 
                     instructions.Add(instruction);
                     
+                    if ((debugData & DebugData.RawInstruction) > 0)
+                        debugCallback?.Invoke("compiler > " + instruction.RawText);
+                    
                     if ((debugData & DebugData.CompiledInstruction) > 0)
                         debugCallback?.Invoke("compiler > " + instruction);
+                    
+                    if ((debugData & DebugData.Separator) > 0)
+                        debugCallback?.Invoke("-------------------------------------------------------------------------" +
+                                              "-----------------------------------------------");
 
                     continue;
                 }
@@ -577,14 +615,43 @@ namespace Hasm
             }
 
             program.Instructions = instructions.ToArray();
+            
+            if ((debugData & DebugData.Binary) > 0)
+                debugCallback?.Invoke("compiler > " + program.ToBase64());
+            
+            if ((debugData & DebugData.Separator) > 0)
+                debugCallback?.Invoke("-------------------------------------------------------------------------" +
+                                      "-----------------------------------------------");
 
             return Result.Success();
         }
     }
     
+    [ProtoBuf.ProtoContract]
     public class Program
     {
+        [ProtoBuf.ProtoMember(1)]
         internal Instruction[] Instructions = Array.Empty<Instruction>();
+        
+        public string ToBase64()
+        {
+            if (Instructions == null)
+                return string.Empty;
+
+            using MemoryStream ms = new MemoryStream();
+            ProtoBuf.Serializer.Serialize(ms, this);
+            return Convert.ToBase64String(ms.GetBuffer(), 0, (int)ms.Length);
+        }
+
+        public void FromBase64(string base64)
+        {
+            if (string.IsNullOrEmpty(base64))
+                return;    
+            
+            byte[] bytes = Convert.FromBase64String(base64);
+            using MemoryStream ms = new MemoryStream(bytes);
+            ProtoBuf.Serializer.Deserialize(ms, this);
+        }
     }
 
     internal enum Operation
@@ -613,20 +680,30 @@ namespace Hasm
         ReturnAddress
     }
     
+    [ProtoBuf.ProtoContract]
     internal struct Instruction
     {
+        [ProtoBuf.ProtoMember(1)]
         internal Operation Operation;
 
+        [ProtoBuf.ProtoMember(2)]
         internal OperandType DestinationRegistryType;
+        [ProtoBuf.ProtoMember(3)]
         internal uint DestinationRegistry;
         
+        [ProtoBuf.ProtoMember(4)]
         internal OperandType LeftOperandType;
+        [ProtoBuf.ProtoMember(5)]
         internal float LeftOperandValue;
         
+        [ProtoBuf.ProtoMember(6)]
         internal OperandType RightOperandType;
+        [ProtoBuf.ProtoMember(7)]
         internal float RightOperandValue;
 
+        [ProtoBuf.ProtoMember(8)]
         internal uint Line;
+        [ProtoBuf.ProtoMember(9)]
         internal string RawText;
 
         public override string ToString()
