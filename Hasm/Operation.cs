@@ -6,6 +6,8 @@ namespace Hasm
         Move,
         Add,
         Subtract,
+        Increment,
+        Decrement,
         Multiply,
         Divide,
         SquareRoot,

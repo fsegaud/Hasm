@@ -51,6 +51,7 @@ namespace Hasm
                 succeed &= Check(ParseJump(index));
                 succeed &= Check(ParseStack(index));
                 succeed &= Check(ParseSelfOperations(index));
+                succeed &= Check(ParseDestinationOperations(index));
                 succeed &= Check(ParseUnaryOperations(index));
                 succeed &= Check(ParseBinaryOperations(index));
             }
@@ -327,6 +328,54 @@ namespace Hasm
             return true;
         }
         
+        private bool ParseDestinationOperations(uint index)
+        {
+            if (_skipLine[index])
+                    return true;
+                
+            Match match = RegexCollection.DestinationOperations.Match(_lines[index]);
+            if (match.Success)
+            {
+                string opt = match.Groups["opt"].Value;
+                string opd = match.Groups["opd"].Value;
+                
+                Instruction instruction = default;
+                instruction.RawText = _lines[index];
+                instruction.Line = index + 1;
+                
+                switch (opt)
+                {
+                    case "inc": instruction.Operation = Operation.Increment; break;
+                    case "dec": instruction.Operation = Operation.Decrement; break;
+                    default:
+                    {
+                        LastError = new Result(Error.OperationNotSupported, instruction);
+                        return false;
+                    }
+                }
+                
+                if (opd == "ra")
+                {
+                    instruction.DestinationRegistryType = Instruction.OperandType.ReturnAddress;
+                }
+                else if (opd == "sp")
+                {
+                    instruction.DestinationRegistryType = Instruction.OperandType.StackPointer;
+                }
+                else
+                {
+                    instruction.DestinationRegistryType = Instruction.OperandType.UserRegistry;
+                    instruction.DestinationRegistry = uint.Parse(opd.Substring(1));
+                }
+                
+                _skipLine[index] = true;
+                _instructions.Add(instruction);
+                LogDebug(instruction);
+            }
+
+            return true;
+        }
+        
         private bool ParseUnaryOperations(uint index)
         {
             if (_skipLine[index])
@@ -533,9 +582,10 @@ namespace Hasm
             internal static readonly Regex LabelJumps = new Regex(@"^(?<opt>j|jra)\s+(?<label>[A-Za-z_]+\b)$");
             internal static readonly Regex LabelRegisters = new Regex(@"^ra|r\d+$");
             
-            internal static readonly Regex SelfOperations = new Regex(@"^(?<opt>nop|ret)$"); 
             internal static readonly Regex JumpOperations = new Regex(@"^(?<opt>j|jra)\s+(?<opl>r\d+\b|ra|sp|[1-9]\d*\b)$");
-            internal static readonly Regex StackOperations = new Regex(@"^(?<opt>push|pop|peek)\s+(?<opd>r\d+\b|ra|sp)$"); 
+            internal static readonly Regex StackOperations = new Regex(@"^(?<opt>push|pop|peek)\s+(?<opd>r\d+\b|ra|sp)$");
+            internal static readonly Regex SelfOperations = new Regex(@"^(?<opt>nop|ret)$");
+            internal static readonly Regex DestinationOperations = new Regex(@"^(?<opt>inc|dec)\s+(?<opd>r\d+\b|ra|sp)$"); 
             internal static readonly Regex UnaryOperations = new Regex(@"^(?<opt>mov|sqrt|assert)\s+(?<opd>r\d+\b|ra|sp)\s+(?<opl>-?\d+[.]?\d*|r\d+\b|ra|sp)$"); 
             internal static readonly Regex BinaryOperations = new Regex(@"^(?<opt>add|sub|mul|div)\s+(?<opd>r\d+\b|ra|sp)\s+(?<opl>-?\d+[.]?\d*|r\d+\b|ra|sp)\s+(?<opr>-?\d+[.]?\d*|r\d+\b|ra|sp)$"); 
         }

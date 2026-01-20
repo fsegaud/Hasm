@@ -1,0 +1,10 @@
+- comparisons / branching
+- debug struct instead of string
+- nested jumps (ra stack)
+- multi src file / includes
+- devices
+- memory / arrays
+- test suit
+- gh actions
+
+- SetRegistry -> SetRegister

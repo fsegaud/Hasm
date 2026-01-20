@@ -39,7 +39,29 @@ namespace Hasm
                     throw new InvalidOperationException();
                 
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new NotImplementedException();
+            }
+        }
+        
+        // TODO: something smart, not related to Instruction, and more generic.
+        private float GetRegistry(ref Instruction instruction)
+        {
+            switch (instruction.DestinationRegistryType)
+            {
+                case Instruction.OperandType.UserRegistry:
+                    return _registers[instruction.DestinationRegistry];
+                
+                case Instruction.OperandType.StackPointer:
+                    return _stackPointer;
+                
+                case Instruction.OperandType.ReturnAddress:
+                    return _returnAddress;
+                
+                case Instruction.OperandType.Literal:
+                    throw new InvalidOperationException();
+                
+                default:
+                    throw new NotImplementedException();
             }
         }
 
@@ -111,6 +133,14 @@ namespace Hasm
                         if (leftOperandValue < 0 )
                             return new Result(Error.NaN, instruction);
                         SetRegistry(ref instruction, (float)Math.Sqrt(leftOperandValue));
+                        break;
+                    
+                    case Operation.Increment:
+                        SetRegistry(ref instruction, GetRegistry(ref instruction) + 1f);
+                        break;
+                    
+                    case Operation.Decrement:
+                        SetRegistry(ref instruction, GetRegistry(ref instruction) - 1f);
                         break;
                     
                     case Operation.Push:
