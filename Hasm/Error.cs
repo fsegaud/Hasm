@@ -20,6 +20,12 @@ namespace Hasm
         DeviceOverflow,
         DeviceUnplugged,
         DeviceFailed,
+#if HASM_FEATURE_MEMORY
+        OutOfMemory,
+        MemoryViolation,
+        NullPointer,
+        MemoryAlreadyFree,
+#endif
         
         AssertFailed = 900,
     }

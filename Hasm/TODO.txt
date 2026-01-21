@@ -5,3 +5,4 @@
 - memory / arrays
 - test suit
 - gh actions
+- Debug/Release compilation (strip raw instruction).

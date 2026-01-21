@@ -54,6 +54,9 @@ namespace Hasm
                 succeed &= Check(ParseDestinationOperations(index));
                 succeed &= Check(ParseUnaryOperations(index));
                 succeed &= Check(ParseBinaryOperations(index));
+#if HASM_FEATURE_MEMORY
+                succeed &= Check(ParseMemoryOperations(index));
+#endif
             }
             
             if (!succeed)
@@ -553,6 +556,58 @@ namespace Hasm
 
             return true;
         }
+        
+#if HASM_FEATURE_MEMORY
+        private bool ParseMemoryOperations(uint index)
+        {
+            if (_skipLine[index])
+                    return true;
+                
+            Match matchMalloc = RegexCollection.AllocateMemory.Match(_lines[index]);
+            Match matchFree = RegexCollection.FreeMemory.Match(_lines[index]);
+            
+            if (matchMalloc.Success)
+            {
+                string opd = matchMalloc.Groups["opd"].Value;
+                string opl = matchMalloc.Groups["opl"].Value;
+                
+                Instruction instruction = default;
+                instruction.RawText = _lines[index];
+                instruction.Line = index + 1;
+
+                instruction.Operation = Operation.AllocateMemory;
+                
+                instruction.DestinationRegistryType = Instruction.OperandType.UserRegister;
+                instruction.Destination = uint.Parse(opd.Substring(1));
+                
+                instruction.LeftOperandType = Instruction.OperandType.Literal;
+                instruction.LeftOperandValue = float.Parse(opl, CultureInfo.InvariantCulture);
+                
+                _skipLine[index] = true;
+                _instructions.Add(instruction);
+                LogDebug(instruction);
+            }
+            else if (matchFree.Success)
+            {
+                string opd = matchFree.Groups["opd"].Value;
+                
+                Instruction instruction = default;
+                instruction.RawText = _lines[index];
+                instruction.Line = index + 1;
+
+                instruction.Operation = Operation.FreeMemory;
+                
+                instruction.DestinationRegistryType = Instruction.OperandType.UserRegister;
+                instruction.Destination = uint.Parse(opd.Substring(1));
+                
+                _skipLine[index] = true;
+                _instructions.Add(instruction);
+                LogDebug(instruction);
+            }
+
+            return true;
+        }
+#endif
 
         private void FixRetInstruction()
         {
@@ -612,8 +667,13 @@ namespace Hasm
             internal static readonly Regex StackOperations = new Regex(@"^(?<opt>push|pop|peek)\s+(?<opd>r\d+\b|ra|sp)$");
             internal static readonly Regex SelfOperations = new Regex(@"^(?<opt>nop|ret)$");
             internal static readonly Regex DestinationOperations = new Regex(@"^(?<opt>inc|dec)\s+(?<opd>r\d+\b|ra|sp)$"); 
-            internal static readonly Regex UnaryOperations = new Regex(@"^^(?<opt>mov|sqrt|assert)\s+(?<opd>r\d+\b|d\d+_\d+\b|ra|sp)\s+(?<opl>-?\d+[.]?\d*|r\d+\b|d\d+_\d+|ra|sp)$"); // TODO: Generalize devices in other regex. 
+            internal static readonly Regex UnaryOperations = new Regex(@"^(?<opt>mov|sqrt|assert)\s+(?<opd>r\d+\b|d\d+_\d+\b|ra|sp)\s+(?<opl>-?\d+[.]?\d*|r\d+\b|d\d+_\d+|ra|sp)$"); // TODO: Generalize devices in other regex. 
             internal static readonly Regex BinaryOperations = new Regex(@"^(?<opt>add|sub|mul|div|eq|neq|gt|gte|lt|lte)\s+(?<opd>r\d+\b|ra|sp)\s+(?<opl>-?\d+[.]?\d*|r\d+\b|ra|sp)\s+(?<opr>-?\d+[.]?\d*|r\d+\b|ra|sp)$");
+
+#if HASM_FEATURE_MEMORY
+            internal static readonly Regex AllocateMemory = new Regex(@"^(?<opt>malloc)\s+(?<opd>r\d+\b)\s+(?<opl>\d+)$"); 
+            internal static readonly Regex FreeMemory = new Regex(@"^(?<opt>free)\s+(?<opd>r\d+\b)$");
+#endif
         }
     }
 }

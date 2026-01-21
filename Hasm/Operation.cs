@@ -22,6 +22,10 @@ namespace Hasm
         GreaterThanOrEqual,
         LesserThan,
         LesserThanOrEqual,
+#if HASM_FEATURE_MEMORY
+        AllocateMemory,
+        FreeMemory,
+#endif
         
         Assert = 100,
         

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
@@ -9,17 +10,29 @@ namespace Hasm
         private readonly int _frequencyHz;
         private readonly double[] _registers;
         private readonly double[] _stack;
+#if HASM_FEATURE_MEMORY
+        private readonly double[] _memory;
+        private readonly uint[] _memoryBlocks;
+#endif
         private readonly IDevice?[] _devices;
 
         private uint _stackPointer;
         private uint _returnAddress;
         
         public  Result LastError { get; private set; }
-
-        public Processor(int numRegistries = 8, int stackLength = 16, int numDevices = 0, int frequencyHz = 0)
+        
+#if HASM_FEATURE_MEMORY
+        public Processor(uint numRegistries = 8u, uint stackLength = 16u, uint memoryLength = 32u, uint numDevices = 0u, int frequencyHz = 0)
+#else
+        public Processor(uint numRegistries = 8u, uint stackLength = 16u, uint numDevices = 0u, int frequencyHz = 0)
+#endif
         {
             _registers = new double[numRegistries];
             _stack = new double[stackLength];
+#if  HASM_FEATURE_MEMORY
+            _memory = new double[memoryLength];
+            _memoryBlocks = new uint[memoryLength];
+#endif
             _devices = new IDevice[numDevices];
             _frequencyHz = frequencyHz;
         }
@@ -414,6 +427,85 @@ namespace Hasm
                         break;
                     }
                     
+#if HASM_FEATURE_MEMORY
+                    case Operation.AllocateMemory:
+                    {
+                        uint mallocPointer = 0;
+                        int mallocLength = (int)instruction.LeftOperandValue;
+                        for (var memIndex = 1; memIndex < _memory.Length - mallocLength; memIndex++) // mem[0] unused (0=null)
+                        {
+                            if (_memoryBlocks[memIndex] == 0)
+                            {
+                                bool failed = false;
+                                // Find 'length' consecutive free cells.
+                                for (var mallocIndex = memIndex + 1; mallocIndex < memIndex + mallocLength; mallocIndex++)
+                                {
+                                    if (_memoryBlocks[mallocIndex] != 0)
+                                    {
+                                        memIndex = mallocIndex;
+                                        failed = true;
+                                        break;
+                                    }
+                                }
+                                
+                                if (!failed)
+                                {
+                                    mallocPointer = (uint)memIndex;
+                                    // Mark cells as block (id = first cell's address).
+                                    for (var mallocIndex = memIndex; mallocIndex < memIndex + mallocLength; mallocIndex++)
+                                    {
+                                        _memoryBlocks[mallocIndex] = mallocPointer;
+                                    }
+                                    
+                                    TrySetDestination(ref instruction, mallocPointer);
+
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (mallocPointer == 0)
+                        {
+                            LastError = new Result(Error.OutOfMemory, instruction);
+                            return false;
+                        }
+                        
+                        break;
+                    }
+
+                    case Operation.FreeMemory:
+                    {
+                        TryGetDestination(ref instruction, out destinationValue);
+                        
+                        uint freePointer = (uint)destinationValue;
+                        if (freePointer == 0)
+                        {
+                            LastError = new Result(Error.NullPointer, instruction);
+                            return false;
+                        }
+
+                        if (_memoryBlocks[freePointer] == 0)
+                        {
+                            LastError = new Result(Error.MemoryAlreadyFree, instruction);
+                            return false;
+                        }
+                        
+                        if (_memoryBlocks[freePointer] != freePointer)
+                        {
+                            LastError = new Result(Error.MemoryViolation, instruction);
+                            return false;
+                        }
+                        
+                        uint memIndex = freePointer;
+                        while (_memoryBlocks[memIndex] == freePointer)
+                        {
+                            _memoryBlocks[memIndex++] = 0;
+                        }
+                        
+                        break;
+                    }
+#endif
+                    
                     case Operation.Ret:
                         breakLoop = true;
                         break;
@@ -453,9 +545,15 @@ namespace Hasm
 
         public string DumpMemory()
         {
-            return $"Sp: {_stackPointer:d4} Ra: {_returnAddress:d4} " + 
+            return $"Sp: {_stackPointer:d4} Ra: {_returnAddress:d4} " +
                    $"Registries: {string.Join(" ", _registers)} " +
-                   $"Stack: {string.Join(" ", _stack)} ";
+                   $"Stack: {string.Join(" ", _stack)} "
+#if HASM_FEATURE_MEMORY
+                   + "\n " +
+                   $"Mem: {string.Join(" ", _memory)} \n" +
+                   $"MemBlocks: {string.Join(" ", _memoryBlocks)}"
+#endif
+                ;
         }
     }
 }
