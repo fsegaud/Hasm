@@ -83,7 +83,7 @@ namespace Hasm
                     IDevice? device = _devices[deviceSlot];
                     if (device != null)
                     {
-                        if (!(bool)_devices[deviceSlot]?.TryWriteValue(deviceRegister, value))
+                        if (!device.TryWriteValue(deviceRegister, value))
                         {
                             LastError = new Result(Error.DeviceFailed, instruction);
                             return false;
@@ -142,7 +142,7 @@ namespace Hasm
                     IDevice? device = _devices[deviceSlot];
                     if (device != null)
                     {
-                        if (!(bool)_devices[deviceSlot]?.TryReadValue(deviceRegister, out value))
+                        if (!device.TryReadValue(deviceRegister, out value))
                         {
                             LastError = new Result(Error.DeviceFailed, instruction);
                             return false;
@@ -198,7 +198,7 @@ namespace Hasm
                     IDevice? device = _devices[deviceSlot];
                     if (device != null)
                     {
-                        if (!(bool)_devices[deviceSlot]?.TryReadValue(deviceRegister, out value))
+                        if (!device.TryReadValue(deviceRegister, out value))
                             LastError = new Result(Error.DeviceFailed, instruction);
                     }
                     else
