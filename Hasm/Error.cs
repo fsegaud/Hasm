@@ -11,12 +11,15 @@ namespace Hasm
         // Processor
         RequirementsNotMet = 200,
         OperationNotImplemented,
-        RegistryOutOfBound,
+        RegisterOutOfBound,
         DivisionByZero,
         NaN,
         StackOverflow,
         InvalidJump,
         LabelNotFound,
+        DeviceOverflow,
+        DeviceUnplugged,
+        DeviceFailed,
         
         AssertFailed = 900,
     }

@@ -6,9 +6,10 @@ namespace Hasm
         internal enum OperandType
         {
             Literal,
-            UserRegistry,
+            UserRegister,
             StackPointer,
-            ReturnAddress
+            ReturnAddress,
+            DeviceRegister,
         }
         
         [ProtoBuf.ProtoMember(1)]
@@ -17,17 +18,17 @@ namespace Hasm
         [ProtoBuf.ProtoMember(2)]
         internal OperandType DestinationRegistryType;
         [ProtoBuf.ProtoMember(3)]
-        internal uint DestinationRegistry;
+        internal uint Destination;
         
         [ProtoBuf.ProtoMember(4)]
         internal OperandType LeftOperandType;
         [ProtoBuf.ProtoMember(5)]
-        internal float LeftOperandValue;
+        internal double LeftOperandValue;
         
         [ProtoBuf.ProtoMember(6)]
         internal OperandType RightOperandType;
         [ProtoBuf.ProtoMember(7)]
-        internal float RightOperandValue;
+        internal double RightOperandValue;
 
         [ProtoBuf.ProtoMember(8)]
         internal uint Line;
@@ -36,7 +37,7 @@ namespace Hasm
 
         public override string ToString()
         {
-            return $"{Operation} {DestinationRegistryType} {DestinationRegistry} {LeftOperandType} {LeftOperandValue} " +
+            return $"{Operation} {DestinationRegistryType} {Destination} {LeftOperandType} {LeftOperandValue} " +
                    $"{RightOperandType} {RightOperandValue}";
         }
     }

@@ -135,6 +135,7 @@ namespace Hasm
                 {
                     case "r" : program.RequiredRegisters = value; break;
                     case "s" : program.RequiredStack = value; break;
+                    case "d" : program.RequiredDevices = value; break;
                     default: throw new NotSupportedException();
                 }
 
@@ -262,7 +263,7 @@ namespace Hasm
                 }
                 else if (opl[0] == 'r')
                 {
-                    instruction.LeftOperandType = Instruction.OperandType.UserRegistry;
+                    instruction.LeftOperandType = Instruction.OperandType.UserRegister;
                     instruction.LeftOperandValue = int.Parse(opl.Substring(1));
                 }
                 else
@@ -316,8 +317,8 @@ namespace Hasm
                 }
                 else
                 {
-                    instruction.DestinationRegistryType = Instruction.OperandType.UserRegistry;
-                    instruction.DestinationRegistry = uint.Parse(opd.Substring(1));
+                    instruction.DestinationRegistryType = Instruction.OperandType.UserRegister;
+                    instruction.Destination = uint.Parse(opd.Substring(1));
                 }
                     
                 _skipLine[index] = true;
@@ -364,8 +365,8 @@ namespace Hasm
                 }
                 else
                 {
-                    instruction.DestinationRegistryType = Instruction.OperandType.UserRegistry;
-                    instruction.DestinationRegistry = uint.Parse(opd.Substring(1));
+                    instruction.DestinationRegistryType = Instruction.OperandType.UserRegister;
+                    instruction.Destination = uint.Parse(opd.Substring(1));
                 }
                 
                 _skipLine[index] = true;
@@ -412,10 +413,22 @@ namespace Hasm
                 {
                     instruction.DestinationRegistryType = Instruction.OperandType.StackPointer;
                 }
+                else if (opd.StartsWith("r"))
+                {
+                    instruction.DestinationRegistryType = Instruction.OperandType.UserRegister;
+                    instruction.Destination = uint.Parse(opd.Substring(1));
+                }
+                else if (opd.StartsWith("d"))
+                {
+                    uint deviceSlot = uint.Parse(opd.Substring(1, opd.IndexOf("_", StringComparison.InvariantCulture) - 1));
+                    uint deviceRegister = uint.Parse(opd.Substring(opd.IndexOf("_", StringComparison.InvariantCulture) + 1));
+                    instruction.DestinationRegistryType = Instruction.OperandType.DeviceRegister;
+                    instruction.Destination = deviceSlot << 16 | deviceRegister; // TODO: Check overflow
+                }
                 else
                 {
-                    instruction.DestinationRegistryType = Instruction.OperandType.UserRegistry;
-                    instruction.DestinationRegistry = uint.Parse(opd.Substring(1));
+                    LastError = new Result(Error.SyntaxError, instruction);
+                    return false;
                 }
                 
                 // TODO: Put all that in a function, goddamit!
@@ -429,8 +442,15 @@ namespace Hasm
                 }
                 else if (opl[0] == 'r')
                 {
-                    instruction.LeftOperandType = Instruction.OperandType.UserRegistry;
+                    instruction.LeftOperandType = Instruction.OperandType.UserRegister;
                     instruction.LeftOperandValue = int.Parse(opl.Substring(1));
+                }
+                else if (opl.StartsWith("d"))
+                {
+                    uint deviceSlot = uint.Parse(opl.Substring(1, opl.IndexOf("_", StringComparison.InvariantCulture) - 1));
+                    uint deviceRegister = uint.Parse(opl.Substring(opl.IndexOf("_", StringComparison.InvariantCulture) + 1));
+                    instruction.LeftOperandType = Instruction.OperandType.DeviceRegister;
+                    instruction.LeftOperandValue = deviceSlot << 16 | deviceRegister; // TODO: Check overflow
                 }
                 else
                 {
@@ -492,8 +512,8 @@ namespace Hasm
                 }
                 else
                 {
-                    instruction.DestinationRegistryType = Instruction.OperandType.UserRegistry;
-                    instruction.DestinationRegistry = uint.Parse(opd.Substring(1));
+                    instruction.DestinationRegistryType = Instruction.OperandType.UserRegister;
+                    instruction.Destination = uint.Parse(opd.Substring(1));
                 }
                 
                 if (opl == "ra")
@@ -506,7 +526,7 @@ namespace Hasm
                 }
                 else if (opl[0] == 'r')
                 {
-                    instruction.LeftOperandType = Instruction.OperandType.UserRegistry;
+                    instruction.LeftOperandType = Instruction.OperandType.UserRegister;
                     instruction.LeftOperandValue = int.Parse(opl.Substring(1));
                 }
                 else
@@ -517,7 +537,7 @@ namespace Hasm
 
                 if (opr[0] == 'r')
                 {
-                    instruction.RightOperandType = Instruction.OperandType.UserRegistry;
+                    instruction.RightOperandType = Instruction.OperandType.UserRegister;
                     instruction.RightOperandValue = int.Parse(opr.Substring(1));
                 }
                 else
@@ -582,7 +602,7 @@ namespace Hasm
         {
             internal static readonly Regex EmptyLine = new Regex(@"^[\s\t]*$");
             internal static readonly Regex Comments = new Regex(@".*(?<com>[;#].*)");
-            internal static readonly Regex Requirements = new Regex(@"^@req:(?<type>r|s)(?<val>\d+)"); 
+            internal static readonly Regex Requirements = new Regex(@"^@req:(?<type>r|s|d)(?<val>\d+)"); 
             
             internal static readonly Regex Labels = new Regex(@"^(?<label>[A-Za-z_]+)\s*:$"); 
             internal static readonly Regex LabelJumps = new Regex(@"^(?<opt>j|jra)\s+(?<label>[A-Za-z_]+\b)$");
@@ -592,7 +612,7 @@ namespace Hasm
             internal static readonly Regex StackOperations = new Regex(@"^(?<opt>push|pop|peek)\s+(?<opd>r\d+\b|ra|sp)$");
             internal static readonly Regex SelfOperations = new Regex(@"^(?<opt>nop|ret)$");
             internal static readonly Regex DestinationOperations = new Regex(@"^(?<opt>inc|dec)\s+(?<opd>r\d+\b|ra|sp)$"); 
-            internal static readonly Regex UnaryOperations = new Regex(@"^(?<opt>mov|sqrt|assert)\s+(?<opd>r\d+\b|ra|sp)\s+(?<opl>-?\d+[.]?\d*|r\d+\b|ra|sp)$"); 
+            internal static readonly Regex UnaryOperations = new Regex(@"^^(?<opt>mov|sqrt|assert)\s+(?<opd>r\d+\b|d\d+_\d+\b|ra|sp)\s+(?<opl>-?\d+[.]?\d*|r\d+\b|d\d+_\d+|ra|sp)$"); // TODO: Generalize devices in other regex. 
             internal static readonly Regex BinaryOperations = new Regex(@"^(?<opt>add|sub|mul|div|eq|neq|gt|gte|lt|lte)\s+(?<opd>r\d+\b|ra|sp)\s+(?<opl>-?\d+[.]?\d*|r\d+\b|ra|sp)\s+(?<opr>-?\d+[.]?\d*|r\d+\b|ra|sp)$");
         }
     }

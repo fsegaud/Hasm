@@ -1,4 +1,7 @@
-﻿namespace HasmTest;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+
+namespace HasmTest;
 
 class Program
 {
@@ -15,18 +18,46 @@ class Program
             return;
         }
         
-        Hasm.Processor processor = new Hasm.Processor(4, 8, 100);
-        Hasm.Result result = processor.Run(program, DebugCallback, Hasm.DebugData.All);
-        if (result.Error != Hasm.Error.Success)
+        Hasm.Processor processor = new Hasm.Processor(4, 8, 4);
+
+        NumberScreen screen = new NumberScreen();
+        processor.PlugDevice(0, screen);
+        
+        if (!processor.Run(program, DebugCallback, Hasm.DebugData.All))
         {
+            Hasm.Result error = processor.LastError;
             Console.Error.WriteLine(
-                $"Runtime Error: {result.Error} ({result.Error:D}) '{result.RawInstruction}' at line {result.Line}");
+                $"Runtime Error: {error.Error} ({error.Error:D}) '{error.RawInstruction}' at line {error.Line}");
             Console.WriteLine(processor.DumpMemory());
+            return;
         }
+        
+        Console.WriteLine(screen.Display);
     }
     
     static void DebugCallback(string msg)
     {
         Console.WriteLine("[dbg] " + msg);
+    }
+}
+
+public class NumberScreen : Hasm.IDevice
+{
+    public string Display { get; private set; }
+    public bool TryReadValue(int index, [UnscopedRef] out double value)
+    {
+        value = 0d;
+        return false;
+    }
+
+    public bool TryWriteValue(int index, double value)
+    {
+        if (index == 0)
+        {
+            Display = value.ToString(CultureInfo.InvariantCulture);
+            return true;
+        }
+
+        return false;
     }
 }

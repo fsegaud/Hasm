@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace Hasm
@@ -6,188 +7,358 @@ namespace Hasm
     public class Processor
     {
         private readonly int _frequencyHz;
-        private readonly float[] _registers;
-        private readonly float[] _stack;
+        private readonly double[] _registers;
+        private readonly double[] _stack;
+        private readonly IDevice?[] _devices;
 
         private uint _stackPointer;
         private uint _returnAddress;
+        
+        public  Result LastError { get; private set; }
 
-        public Processor(int numRegistries = 8, int stackLength = 32, int frequencyHz = 0 /* not simulated */)
+        public Processor(int numRegistries = 8, int stackLength = 16, int numDevices = 0, int frequencyHz = 0)
         {
-            _registers = new float[numRegistries];
-            _stack = new float[stackLength];
+            _registers = new double[numRegistries];
+            _stack = new double[stackLength];
+            _devices = new IDevice[numDevices];
             _frequencyHz = frequencyHz;
         }
 
-        private void SetRegister(ref Instruction instruction, float value)
+        public bool PlugDevice(uint deviceSlot, IDevice device)
+        {
+            if (deviceSlot >= _devices.Length)
+                return false;
+            
+            _devices[deviceSlot] = device;
+            return true;
+        }
+
+        public bool UnplugDevice(uint deviceSlot, IDevice device)
+        {
+            if (deviceSlot >= _devices.Length)
+                return false;
+            
+            _devices[deviceSlot] = null;
+            return true;
+        }
+
+        [SuppressMessage("ReSharper", "UnusedMethodReturnValue.Local")]
+        private bool TrySetDestination(ref Instruction instruction, double value)
         {
             switch (instruction.DestinationRegistryType)
             {
-                case Instruction.OperandType.UserRegistry:
-                    _registers[instruction.DestinationRegistry] = value;
+                case Instruction.OperandType.UserRegister:
+                {
+                    if (instruction.Destination >= _registers.Length)
+                    {
+                        LastError = new Result(Error.RegisterOutOfBound, instruction);
+                        return false;
+                    }
+                    
+                    _registers[instruction.Destination] = value;
                     break;
+                }
                 
                 case Instruction.OperandType.StackPointer:
+                {
                     _stackPointer = (uint)value;
                     break;
+                }
                 
                 case Instruction.OperandType.ReturnAddress:
                     _returnAddress = (uint)value;
                     break;
                 
+                case Instruction.OperandType.DeviceRegister:
+                {
+                    int deviceSlot = (int)instruction.Destination >> 16;
+                    int deviceRegister = 0xffff & (int)instruction.Destination;
+                    
+                    if (deviceSlot > _devices.Length)
+                    {
+                        LastError = new Result(Error.DeviceOverflow, instruction);
+                        return false;
+                    }
+                    
+                    IDevice? device = _devices[deviceSlot];
+                    if (device != null)
+                    {
+                        if (!(bool)_devices[deviceSlot]?.TryWriteValue(deviceRegister, value))
+                        {
+                            LastError = new Result(Error.DeviceFailed, instruction);
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        LastError = new Result(Error.DeviceUnplugged, instruction);
+                        return false;
+                    }
+
+                    break;
+                }
+                
                 case Instruction.OperandType.Literal:
                     throw new InvalidOperationException();
                 
                 default:
                     throw new NotImplementedException();
             }
-        }
-        
-        // TODO: something smart, not related to Instruction, and more generic.
-        private float GetRegister(ref Instruction instruction)
-        {
-            switch (instruction.DestinationRegistryType)
-            {
-                case Instruction.OperandType.UserRegistry:
-                    return _registers[instruction.DestinationRegistry];
-                
-                case Instruction.OperandType.StackPointer:
-                    return _stackPointer;
-                
-                case Instruction.OperandType.ReturnAddress:
-                    return _returnAddress;
-                
-                case Instruction.OperandType.Literal:
-                    throw new InvalidOperationException();
-                
-                default:
-                    throw new NotImplementedException();
-            }
+
+            return true;
         }
 
-        private bool TryGetOperandValue(Instruction.OperandType type, ref float value)
+        private bool TryGetDestination(ref Instruction instruction, out double value)
         {
-            if (type == Instruction.OperandType.UserRegistry && (value < 0 || value >= _registers.Length))
-                return false;
-            
+            value = 0d;
+            switch (instruction.DestinationRegistryType)
+            {
+                case Instruction.OperandType.UserRegister:
+                {
+                    if (instruction.Destination >= _registers.Length)
+                    {
+                        LastError = new Result(Error.RegisterOutOfBound, instruction);
+                        return false;
+                    }
+                    
+                    value = _registers[instruction.Destination];
+                    break;
+                }
+
+                case Instruction.OperandType.StackPointer: value = _stackPointer; break;
+                case Instruction.OperandType.ReturnAddress: value = _returnAddress; break;
+
+                case Instruction.OperandType.DeviceRegister:
+                {
+                    int deviceSlot = (int)instruction.Destination >> 16;
+                    int deviceRegister = 0xffff & (int)instruction.Destination;
+                    
+                    if (deviceSlot > _devices.Length)
+                    {
+                        LastError = new Result(Error.DeviceOverflow, instruction);
+                        return false;
+                    }
+                    
+                    IDevice? device = _devices[deviceSlot];
+                    if (device != null)
+                    {
+                        if (!(bool)_devices[deviceSlot]?.TryReadValue(deviceRegister, out value))
+                        {
+                            LastError = new Result(Error.DeviceFailed, instruction);
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        LastError = new Result(Error.DeviceUnplugged, instruction);
+                        return false;
+                    }
+
+                    break;
+                }
+                    
+                case Instruction.OperandType.Literal:
+                    throw new InvalidOperationException();
+                
+                default:
+                    throw new NotImplementedException();
+            }
+
+            return true;
+        }
+
+        private bool TryGetOperandValue(ref Instruction instruction, Instruction.OperandType type, ref double value)
+        {
             switch (type)
             {
                 case Instruction.OperandType.Literal: break;
-                case Instruction.OperandType.UserRegistry: value = _registers[(int)value]; break;
                 case Instruction.OperandType.StackPointer: value = _stackPointer; break;
                 case Instruction.OperandType.ReturnAddress: value = _returnAddress; break;
+                case Instruction.OperandType.UserRegister:
+                {
+                    if (value < 0 || value >= _registers.Length)
+                    {
+                        LastError = new Result(Error.RegisterOutOfBound, instruction);
+                        return false;
+                    }
+                    value = _registers[(int)value]; break;
+                }
+                
+                case Instruction.OperandType.DeviceRegister:
+                {
+                    int deviceSlot = (int)value >> 16;
+                    int deviceRegister = 0xffff & (int)value;
+                    
+                    if (deviceSlot > _devices.Length)
+                    {
+                        LastError = new Result(Error.DeviceOverflow, instruction);
+                        return false;
+                    }
+                    
+                    IDevice? device = _devices[deviceSlot];
+                    if (device != null)
+                    {
+                        if (!(bool)_devices[deviceSlot]?.TryReadValue(deviceRegister, out value))
+                            LastError = new Result(Error.DeviceFailed, instruction);
+                    }
+                    else
+                        LastError = new Result(Error.DeviceUnplugged, instruction);
+
+                    break;
+                }
+                
                 default: throw new ArgumentOutOfRangeException();
             }
 
             return true;
         }
         
-        public Result Run(Program program, Action<string>? debugCallback = null, DebugData debugData = DebugData.None)
+        public bool Run(Program program, Action<string>? debugCallback = null, DebugData debugData = DebugData.None)
         {
-            if (_registers.Length < program.RequiredRegisters || _stack.Length < program.RequiredStack)
-                return new Result(Error.RequirementsNotMet);
+            _stackPointer = 0;
+            _returnAddress = 0;
+
+            LastError = Result.Success();
+
+            if (_registers.Length < program.RequiredRegisters || _stack.Length < program.RequiredStack || 
+                _devices.Length < program.RequiredDevices)
+            {
+                LastError = new Result(Error.RequirementsNotMet);
+                return false;
+            }
             
             bool breakLoop = false;
             for (int index = 0; index < program.Instructions.Length && !breakLoop; index++)
             {
                 Instruction instruction = program.Instructions[index];
-                
-                float leftOperandValue = instruction.LeftOperandValue;
-                float rightOperandValue = instruction.RightOperandValue;
-                
-                if (!TryGetOperandValue(instruction.LeftOperandType, ref leftOperandValue) ||
-                    !TryGetOperandValue(instruction.RightOperandType, ref rightOperandValue) ||
-                    instruction.DestinationRegistry >= _registers.Length)
-                {
-                    return new Result(Error.RegistryOutOfBound, instruction);
-                }
 
+                double destinationValue;
+                double leftOperandValue = instruction.LeftOperandValue;
+                double rightOperandValue = instruction.RightOperandValue;
+                
+                if (!TryGetOperandValue(ref instruction, instruction.LeftOperandType, ref leftOperandValue) ||
+                    !TryGetOperandValue(ref instruction, instruction.RightOperandType, ref rightOperandValue))
+                    return false;
+                    
                 switch (instruction.Operation)
                 {
                     case Operation.Nop:
                         break;
                     
                     case Operation.Move:
-                        SetRegister(ref instruction, leftOperandValue);
+                        TrySetDestination(ref instruction, leftOperandValue);
                         break;
                     
                     case Operation.Add:
-                        SetRegister(ref instruction, leftOperandValue + rightOperandValue);
+                        TrySetDestination(ref instruction, leftOperandValue + rightOperandValue);
                         break;
                     
                     case Operation.Subtract:
-                        SetRegister(ref instruction, leftOperandValue - rightOperandValue);
+                        TrySetDestination(ref instruction, leftOperandValue - rightOperandValue);
                         break;
                     
                     case Operation.Multiply:
-                        SetRegister(ref instruction, leftOperandValue * rightOperandValue);
+                        TrySetDestination(ref instruction, leftOperandValue * rightOperandValue);
                         break;
                     
                     case Operation.Divide:
                         if (rightOperandValue == 0)
-                            return new Result(Error.DivisionByZero, instruction);
-                        SetRegister(ref instruction, leftOperandValue / rightOperandValue);
+                        {
+                            LastError = new Result(Error.DivisionByZero, instruction);
+                            return false;
+                        }
+
+                        TrySetDestination(ref instruction, leftOperandValue / rightOperandValue);
                         break;
                     
                     case Operation.SquareRoot:
-                        if (leftOperandValue < 0 )
-                            return new Result(Error.NaN, instruction);
-                        SetRegister(ref instruction, (float)Math.Sqrt(leftOperandValue));
+                        if (leftOperandValue < 0)
+                        {
+                            LastError = new Result(Error.NaN, instruction);
+                            return false;
+                        }
+
+                        TrySetDestination(ref instruction, Math.Sqrt(leftOperandValue));
                         break;
                     
                     case Operation.Increment:
-                        SetRegister(ref instruction, GetRegister(ref instruction) + 1f);
+                    {
+                        if (!TryGetDestination(ref instruction, out destinationValue))
+                            return false;
+                        TrySetDestination(ref instruction, destinationValue + 1d);
                         break;
+                    }
                     
                     case Operation.Decrement:
-                        SetRegister(ref instruction, GetRegister(ref instruction) - 1f);
+                    {
+                        if (!TryGetDestination(ref instruction, out destinationValue))
+                            return false;
+                        TrySetDestination(ref instruction, destinationValue - 1d);
                         break;
+                    }
                     
                     case Operation.Equal:
-                        SetRegister(ref instruction, Math.Abs(leftOperandValue - rightOperandValue) < float.Epsilon ? 1f : 0f);
+                        TrySetDestination(ref instruction, Math.Abs(leftOperandValue - rightOperandValue) < double.Epsilon ? 1d : 0d);
                         break;
                     
                     case Operation.NotEqual:
-                        SetRegister(ref instruction, Math.Abs(leftOperandValue - rightOperandValue) < float.Epsilon ? 0f : 1f);
+                        TrySetDestination(ref instruction, Math.Abs(leftOperandValue - rightOperandValue) < double.Epsilon ? 0d : 1d);
                         break;
                     
                     case Operation.GreaterThan:
-                        SetRegister(ref instruction, leftOperandValue > rightOperandValue ? 1f : 0f);
+                        TrySetDestination(ref instruction, leftOperandValue > rightOperandValue ? 1d : 0d);
                         break;
                     
                     case Operation.GreaterThanOrEqual:
-                        SetRegister(ref instruction, leftOperandValue >= rightOperandValue ? 1f : 0f);
+                        TrySetDestination(ref instruction, leftOperandValue >= rightOperandValue ? 1d : 0d);
                         break;
                     
                     case Operation.LesserThan:
-                        SetRegister(ref instruction, leftOperandValue < rightOperandValue ? 1f : 0f);
+                        TrySetDestination(ref instruction, leftOperandValue < rightOperandValue ? 1d : 0d);
                         break;
                     
                     case Operation.LesserThanOrEqual:
-                        SetRegister(ref instruction, leftOperandValue <= rightOperandValue ? 1f : 0f);
+                        TrySetDestination(ref instruction, leftOperandValue <= rightOperandValue ? 1d : 0d);
                         break;
                     
                     case Operation.Push:
                         if (_stackPointer >= _stack.Length)
-                            return new Result(Error.StackOverflow, instruction);
-                        _stack[_stackPointer++] = _registers[instruction.DestinationRegistry];
+                        {
+                            LastError = new Result(Error.StackOverflow, instruction);
+                            return false;
+                        }
+
+                        if (!TryGetDestination(ref instruction, out destinationValue))
+                            return false;
+                        _stack[_stackPointer++] = destinationValue;
                         break;
                     
                     case Operation.Pop:
                         if (_stackPointer == 0)
-                            return new Result(Error.StackOverflow, instruction);
-                        SetRegister(ref instruction, _stack[--_stackPointer]);
+                        {
+                            LastError = new Result(Error.StackOverflow, instruction);
+                            return false;
+                        }
+                        TrySetDestination(ref instruction, _stack[--_stackPointer]);
                         break;
                     
                     case Operation.Peek:
                         if (_stackPointer == 0)
-                            return new Result(Error.StackOverflow, instruction);
-                        SetRegister(ref instruction, _stack[_stackPointer - 1]);
+                        {
+                            LastError = new Result(Error.StackOverflow, instruction);
+                            return false;
+                        }
+                        TrySetDestination(ref instruction, _stack[_stackPointer - 1]);
                         break;
                     
                     case Operation.Assert:
-                        if (Math.Abs(_registers[instruction.DestinationRegistry] - leftOperandValue) > float.Epsilon)
-                            return new Result(Error.AssertFailed, instruction);
+                        if (!TryGetDestination(ref instruction, out destinationValue))
+                            return false;
+                        if (Math.Abs(destinationValue - leftOperandValue) > double.Epsilon)
+                        {
+                            LastError = new Result(Error.AssertFailed, instruction);
+                            return false;
+                        }
                         break;
 
                     case Operation.Jump:
@@ -203,7 +374,10 @@ namespace Hasm
                         }
 
                         if (foundDestination < 0)
-                            return new Result(Error.InvalidJump, instruction);
+                        {
+                            LastError = new Result(Error.InvalidJump, instruction);
+                            return false;
+                        }
                         index = foundDestination - 1;
                         break;
                     }
@@ -221,7 +395,10 @@ namespace Hasm
                         }
 
                         if (foundDestination < 0)
-                            return new Result(Error.InvalidJump, instruction);
+                        {
+                            LastError = new Result(Error.InvalidJump, instruction);
+                            return false;
+                        }
                         index = foundDestination - 1;
 
                         // Find next instruction (+1 wouldn't ignore blank lines and comments).
@@ -242,8 +419,12 @@ namespace Hasm
                         break;
 
                     default:
-                        return new Result(Error.OperationNotImplemented, instruction);
+                        LastError = new Result(Error.OperationNotImplemented, instruction);
+                        return false;
                 }
+
+                if (LastError.Error != Error.Success)
+                    return false;
                 
                 if ((debugData & DebugData.RawInstruction) > 0)
                     debugCallback?.Invoke($"processor > Raw[{instruction.Line:d4}]: " + instruction.RawText);
@@ -262,12 +443,12 @@ namespace Hasm
                     Thread.Sleep(1000 / _frequencyHz);
             }
 
-            return Result.Success();
+            return true;
         }
 
-        public float ReadRegistry(int registry)
+        public double ReadRegistry(int registry)
         {
-            return registry >= 0 && registry < _registers.Length ? _registers[registry] : float.NaN;
+            return registry >= 0 && registry < _registers.Length ? _registers[registry] : double.NaN;
         }
 
         public string DumpMemory()

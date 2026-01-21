@@ -10,8 +10,10 @@ namespace Hasm
         public uint RequiredRegisters { get; internal set; }
         [ProtoBuf.ProtoMember(2)]
         public uint RequiredStack { get; internal set; }
-        
         [ProtoBuf.ProtoMember(3)]
+        public uint RequiredDevices { get; internal set; }
+        
+        [ProtoBuf.ProtoMember(4)]
         internal Instruction[] Instructions = Array.Empty<Instruction>();
         
         public string ToBase64()
