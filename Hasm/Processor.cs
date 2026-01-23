@@ -86,7 +86,7 @@ namespace Hasm
                     int deviceSlot = (int)instruction.Destination >> 16;
                     int deviceRegister = 0xffff & (int)instruction.Destination;
                     
-                    if (deviceSlot > _devices.Length)
+                    if (deviceSlot >= _devices.Length)
                     {
                         LastError = new Result(Error.DeviceOverflow, instruction);
                         return false;
@@ -145,7 +145,7 @@ namespace Hasm
                     int deviceSlot = (int)instruction.Destination >> 16;
                     int deviceRegister = 0xffff & (int)instruction.Destination;
                     
-                    if (deviceSlot > _devices.Length)
+                    if (deviceSlot >= _devices.Length)
                     {
                         LastError = new Result(Error.DeviceOverflow, instruction);
                         return false;
@@ -202,7 +202,7 @@ namespace Hasm
                     int deviceSlot = (int)value >> 16;
                     int deviceRegister = 0xffff & (int)value;
                     
-                    if (deviceSlot > _devices.Length)
+                    if (deviceSlot >= _devices.Length)
                     {
                         LastError = new Result(Error.DeviceOverflow, instruction);
                         return false;

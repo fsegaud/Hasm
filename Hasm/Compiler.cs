@@ -574,8 +574,8 @@ namespace Hasm
                 }
                 else if (opl.StartsWith("d"))
                 {
-                    uint deviceSlot = uint.Parse(opl.Substring(1, opl.IndexOf("_", StringComparison.InvariantCulture) - 1));
-                    uint deviceRegister = uint.Parse(opl.Substring(opl.IndexOf("_", StringComparison.InvariantCulture) + 1));
+                    uint deviceSlot = uint.Parse(opl.Substring(1, opl.IndexOf(".", StringComparison.InvariantCulture) - 1));
+                    uint deviceRegister = uint.Parse(opl.Substring(opl.IndexOf(".", StringComparison.InvariantCulture) + 1));
                     instruction.LeftOperandType = Instruction.OperandType.DeviceRegister;
                     instruction.LeftOperandValue = deviceSlot << 16 | deviceRegister; // TODO: Check overflow
                 }

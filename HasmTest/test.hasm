@@ -1,19 +1,32 @@
 @require registers 4
 @require stack 2
-@require devices 1
+@require devices 2
 #@require memory 8
 
-# Test addition, stack, jumps, aliases, devices.
+###### Test EEPROM ######
+alias $eeprom_i d1.0
+alias $eeprom_v d1.1
+mov $eeprom_i 4
+mov $eeprom_v 55
+mov $eeprom_i 2
+mov r0 $eeprom_v
+mov $eeprom_i 4
+mov r1 $eeprom_v
+assert r0 0
+assert r1 55
+ret
+########################
 
 main:
     # variables
     alias $a r0
     alias $b r1
-    alias $screen_device d0.0
+    alias $d_rom d0.0
+    alias $d_screen d2.0
 
     # declare values
-    mov $a 2
-    mov $b 3
+    mov $a 10
+    mov $b 5
     
     # push values
     push $a
@@ -24,10 +37,12 @@ main:
     
     # pop and test result
     pop $a
-    assert $a 5
+    assert $a 15
     
     # store on device
-    mov $screen_device $a
+    mov $d_rom $a
+    mov r7 $d_rom
+    mov $d_screen r7
     
     ret 
 
