@@ -1,27 +1,33 @@
-@req:r4
-@req:s2
-@req:d1
+@require registers 4
+@require stack 2
+@require devices 1
+#@require memory 8
 
-# Test addition function, stack and devices.
+# Test addition, stack, jumps, aliases, devices.
 
 main:
+    # variables
+    alias $a r0
+    alias $b r1
+    alias $screen_device d0.0
+
     # declare values
-    mov r0 2
-    mov r1 3
+    mov $a 2
+    mov $b 3
     
     # push values
-    push r0
-    push r1
+    push $a
+    push $b
     
     # call function
     jal f_add
     
     # pop and test result
-    pop r0
-    assert r0 5
+    pop $a
+    assert $a 5
     
     # store on device
-    mov d0_0 r0
+    mov $screen_device $a
     
     ret 
 

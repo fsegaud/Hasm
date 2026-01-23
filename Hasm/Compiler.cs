@@ -34,6 +34,7 @@ namespace Hasm
             {
                 succeed &= Check(ParseSpaceAndTabs(index));
                 succeed &= Check(ParseComments(index));
+                succeed &= Check(ParseAliases(index));
                 succeed &= Check(ParseRequirements(index, ref program));
                 succeed &= Check(PreParseLabels(index));
             }
@@ -122,6 +123,28 @@ namespace Hasm
             return true;
         }
 
+        private bool ParseAliases(uint index)
+        {
+            if (_skipLine[index])
+                return true;
+            
+            Match match = RegexCollection.Aliases.Match(_lines[index]);
+            if (match.Success)
+            {
+                string alias = match.Groups["alias"].Value;
+                string dest = match.Groups["dest"].Value;
+
+                for (var replIndex = 0; replIndex < _lines.Length; replIndex++)
+                {
+                    _lines[replIndex] = _lines[replIndex].Replace(alias, dest);
+                }
+                
+                _skipLine[index] = true;
+            }
+            
+            return true;
+        }
+
         private bool ParseRequirements(uint index, ref Program program)
         {
             if (_skipLine[index])
@@ -135,9 +158,12 @@ namespace Hasm
                     
                 switch (type)
                 {
-                    case "r" : program.RequiredRegisters = value; break;
-                    case "s" : program.RequiredStack = value; break;
-                    case "d" : program.RequiredDevices = value; break;
+                    case "registers" : program.RequiredRegisters = value; break;
+                    case "stack" : program.RequiredStack = value; break;
+                    case "devices" : program.RequiredDevices = value; break;
+#if HASM_FEATURE_MEMORY
+                    case "memory" : throw new NotImplementedException();
+#endif
                     default: throw new NotSupportedException();
                 }
 
@@ -521,8 +547,8 @@ namespace Hasm
                 }
                 else if (opd.StartsWith("d"))
                 {
-                    uint deviceSlot = uint.Parse(opd.Substring(1, opd.IndexOf("_", StringComparison.InvariantCulture) - 1));
-                    uint deviceRegister = uint.Parse(opd.Substring(opd.IndexOf("_", StringComparison.InvariantCulture) + 1));
+                    uint deviceSlot = uint.Parse(opd.Substring(1, opd.IndexOf(".", StringComparison.InvariantCulture) - 1));
+                    uint deviceRegister = uint.Parse(opd.Substring(opd.IndexOf(".", StringComparison.InvariantCulture) + 1));
                     instruction.DestinationRegistryType = Instruction.OperandType.DeviceRegister;
                     instruction.Destination = deviceSlot << 16 | deviceRegister; // TODO: Check overflow
                 }
@@ -737,7 +763,8 @@ namespace Hasm
         {
             internal static readonly Regex EmptyLine = new Regex(@"^[\s\t]*$");
             internal static readonly Regex Comments = new Regex(@"^[^;#]*(?<com>[;#]+.*)$");
-            internal static readonly Regex Requirements = new Regex(@"^@req:(?<type>r|s|d)(?<val>\d+)"); 
+            internal static readonly Regex Aliases = new Regex(@"^alias\s+(?<alias>\$\w+)\s(?<dest>(?:r\d+|d\d+\.\d+|-?\d+[.]?\d*|r\d+\b))$");
+            internal static readonly Regex Requirements = new Regex(@"^@require\s+(?<type>registers|stack|devices|memory)\s+(?<val>\d+)$"); 
             
             internal static readonly Regex Labels = new Regex(@"^(?<label>[A-Za-z_]+)\s*:$"); 
             internal static readonly Regex LabelJumps = new Regex(@"^(?<opt>j|jal)\s+(?<label>[A-Za-z_]+\b)$");
@@ -748,7 +775,7 @@ namespace Hasm
             internal static readonly Regex StackOperations = new Regex(@"^(?<opt>push|pop|peek)\s+(?<opd>r\d+\b|ra|sp)$");
             internal static readonly Regex SelfOperations = new Regex(@"^(?<opt>nop|ret)$");
             internal static readonly Regex DestinationOperations = new Regex(@"^(?<opt>inc|dec)\s+(?<opd>r\d+\b|ra|sp)$"); 
-            internal static readonly Regex UnaryOperations = new Regex(@"^(?<opt>mov|sqrt|assert)\s+(?<opd>r\d+\b|d\d+_\d+\b|ra|sp)\s+(?<opl>-?\d+[.]?\d*|r\d+\b|d\d+_\d+|ra|sp)$"); // TODO: Generalize devices in other regex. 
+            internal static readonly Regex UnaryOperations = new Regex(@"^(?<opt>mov|sqrt|assert)\s+(?<opd>r\d+\b|d\d+\.\d+\b|ra|sp)\s+(?<opl>-?\d+[.]?\d*|r\d+\b|d\d+\.\d+|ra|sp)$"); // TODO: Generalize devices in other regex. 
             internal static readonly Regex BinaryOperations = new Regex(@"^(?<opt>add|sub|mul|div|eq|neq|gt|gte|lt|lte)\s+(?<opd>r\d+\b|ra|sp)\s+(?<opl>-?\d+[.]?\d*|r\d+\b|ra|sp)\s+(?<opr>-?\d+[.]?\d*|r\d+\b|ra|sp)$");
 
 #if HASM_FEATURE_MEMORY

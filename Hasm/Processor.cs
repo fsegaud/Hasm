@@ -414,6 +414,7 @@ namespace Hasm
 
                     case Operation.Jump:
                     {
+                        // ReSharper disable once UnusedVariable
                         if (!TryResolveJump(program, ref instruction, out int destinationIndex, out uint returnAddress))
                         {
                             LastError = new Result(Error.InvalidJump, instruction);
