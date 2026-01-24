@@ -35,6 +35,7 @@ namespace Hasm
         BranchLesserThanOrEqual,
         BranchLesserThanOrEqualReturnAddress,
         ReadWriteDevice,
+        SleepMilliseconds,
 #if HASM_FEATURE_MEMORY
         AllocateMemory,
         FreeMemory,

@@ -47,6 +47,7 @@ namespace Hasm
             for (var index = 0u; index < _lines.Length && succeed; index++)
             {
                 succeed &= Check(ParseLabels(index));
+                succeed &= Check(ParseSleep(index));
                 succeed &= Check(ParseJump(index));
                 succeed &= Check(ParseBranching(index));
                 succeed &= Check(ParseStack(index));
@@ -140,7 +141,10 @@ namespace Hasm
 
                 for (var replIndex = 0; replIndex < _lines.Length; replIndex++)
                 {
-                    _lines[replIndex] = _lines[replIndex].Replace(alias, dest);
+                    
+                    // Add space/endline to avoid replacing $aa with [$a]a for instance.  
+                    _lines[replIndex] = _lines[replIndex].Replace(alias + " ", dest + " ");
+                    _lines[replIndex] = _lines[replIndex].Replace(alias + "\r", dest + "\r");
                 }
                 
                 _skipLine[index] = true;
@@ -251,6 +255,54 @@ namespace Hasm
                     }
                 }
 
+                _skipLine[index] = true;
+                _instructions.Add(instruction);
+            }
+
+            return true;
+        }
+        
+        private bool ParseSleep(uint index)
+        {
+            if (_skipLine[index])
+                    return true;
+
+            Match match = RegexCollection.SleepOperations.Match(_lines[index]);
+            if (match.Success)
+            {
+                string opt = match.Groups["opt"].Value;
+                string opl = match.Groups["opl"].Value;
+                
+                Instruction instruction = default;
+                instruction.RawText = _lines[index];
+                instruction.Line = index + 1;
+                
+                switch (opt)
+                {
+                    case "sleep": instruction.Operation = Operation.SleepMilliseconds; break;
+                    default:
+                    {
+                        LastError = new Result(Error.OperationNotSupported, instruction);
+                        return false;
+                    }
+                }
+
+                if (opl[0] == 'r')
+                {
+                    instruction.LeftOperandType = Instruction.OperandType.UserRegister;
+                    instruction.LeftOperandValue = uint.Parse(opl.Substring(1));
+                }
+                else if (opl.StartsWith("0x"))
+                {
+                    instruction.LeftOperandType = Instruction.OperandType.HexLiteral;
+                    instruction.LeftOperandValue = uint.Parse(opl.Substring(2), NumberStyles.HexNumber);
+                }
+                else
+                {
+                    instruction.LeftOperandType = Instruction.OperandType.Literal;
+                    instruction.LeftOperandValue = uint.Parse(opl, CultureInfo.InvariantCulture);
+                }
+                
                 _skipLine[index] = true;
                 _instructions.Add(instruction);
             }
@@ -891,7 +943,8 @@ namespace Hasm
             internal static readonly Regex LabelJumps = new Regex(@"^(?<opt>j|jal|beq|beqal|bneq|bneqal|bgt|bgtal|bgte|bgteal|blt|bltal|blte|blteal)\s+(?<label>[A-Za-z_][A-Za-z0-9_]+\b).*$");
             internal static readonly Regex LabelRegisters = new Regex(@"^ra|r\d+$");
             
-            internal static readonly Regex JumpOperations = new Regex(@"^(?<opt>j|jal)\s+(?<opd>r\d+\b|ra|[1-9]|0x[0-9a-fA-F]+\b\d*\b)$");
+            internal static readonly Regex SleepOperations = new Regex(@"^(?<opt>sleep)\s+(?<opl>r\d+\b|[1-9]\d*\b|0x[0-9a-fA-F]+\d*\b)$");
+            internal static readonly Regex JumpOperations = new Regex(@"^(?<opt>j|jal)\s+(?<opd>r\d+\b|ra|[1-9]\d*\b|0x[0-9a-fA-F]+\d*\b)$");
             internal static readonly Regex BranchingOperations = new Regex(@"^(?<opt>beq|beqal|bneq|bneqal|bgt|bgtal|bgte|bgteal|blt|bltal|blte|blteal)\s+(?<opd>r\d+\b|ra|sp|[1-9]\d*\b|0x[0-9a-fA-F]+\b)\s+(?<opl>-?\d+[.]?\d*|r\d+\b|0x[0-9a-fA-F]+\b|ra|sp)\s+(?<opr>-?\d+[.]?\d*|r\d+\b|0x[0-9a-fA-F]+\b|ra|sp)$");
             internal static readonly Regex StackOperations = new Regex(@"^(?<opt>push|pop|peek)\s+(?<opd>r\d+\b|0x[0-9a-fA-F]+\b|ra|sp)$");
             internal static readonly Regex SelfOperations = new Regex(@"^(?<opt>nop|ret)$");

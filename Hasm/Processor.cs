@@ -1,6 +1,6 @@
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Threading;
 
 namespace Hasm
 {
@@ -17,6 +17,9 @@ namespace Hasm
         private uint _stackPointer;
         private uint _returnAddress;
         private int _instructionPointer;
+
+        private readonly Stopwatch _sleepWatch = new Stopwatch();
+        private long _sleepTime = -1;
         
         private Program? _program;
         private Action<DebugData>? _debugCallback;
@@ -29,7 +32,7 @@ namespace Hasm
 #if HASM_FEATURE_MEMORY
         public Processor(uint numRegistries = 8u, uint stackLength = 16u, uint memoryLength = 32u, uint numDevices = 0u, int frequencyHz = 0)
 #else
-        public Processor(uint numRegistries = 8u, uint stackLength = 16u, uint numDevices = 0u, int frequencyHz = 0)
+        public Processor(uint numRegistries = 8u, uint stackLength = 16u, uint numDevices = 0u)
 #endif
         {
             _registers = new double[numRegistries];
@@ -276,6 +279,8 @@ namespace Hasm
         {
             _program = program;
             _debugCallback = debugCallback;
+            _sleepTime = -1;
+            _sleepWatch.Stop();
             
             _stackPointer = 0;
             _returnAddress = 0;
@@ -298,6 +303,14 @@ namespace Hasm
 
             if (IsFinished)
                 return true;
+
+            if (_sleepTime > 0)
+            {
+                if (_sleepWatch.ElapsedMilliseconds < _sleepTime)
+                    return true;
+                _sleepTime = -1;
+                _sleepWatch.Reset();
+            }
             
             bool breakLoop = false;
             for (int index = _instructionPointer; index < _program.Instructions.Length && !breakLoop && cycles > 0; index++, _instructionPointer++, cycles--)
@@ -558,7 +571,6 @@ namespace Hasm
                     case Operation.ReadWriteDevice:
                         TrySetDestination(ref instruction, leftOperandValue);
                         break;
-
 #if HASM_FEATURE_MEMORY
                     case Operation.AllocateMemory:
                     {
@@ -637,8 +649,14 @@ namespace Hasm
                         break;
                     }
 #endif
+                    case Operation.SleepMilliseconds:
+                        _sleepTime = (long)leftOperandValue;
+                        _sleepWatch.Restart();
+                        breakLoop = true;
+                        break;
                     
                     case Operation.Ret:
+                        _instructionPointer = int.MaxValue - 1;
                         breakLoop = true;
                         break;
 
@@ -656,12 +674,18 @@ namespace Hasm
             return true;
         }
 
-        public double ReadRegistry(int registry)
+        public void Push(double value)
         {
-            return registry >= 0 && registry < _registers.Length ? _registers[registry] : double.NaN;
+            if (_stackPointer < _stack.Length)
+                _stack[_stackPointer++] = value;
         }
 
-        internal DebugData GenerateDebugData(ref Instruction instruction)
+        public double Pop()
+        {
+            return _stackPointer > 0 ? _stack[--_stackPointer] : double.NaN;
+        }
+
+        private DebugData GenerateDebugData(ref Instruction instruction)
         {
             DebugData data;
             

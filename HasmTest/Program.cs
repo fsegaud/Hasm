@@ -19,15 +19,23 @@ class Program
 
         PrintProgramInfo(program);
         
-        Hasm.Processor processor = new Hasm.Processor(numDevices: 4);
+        Hasm.Processor processor = new Hasm.Processor(numDevices: 2);
         Hasm.Devices.Screen screen = processor.PlugDevice(1, new Hasm.Devices.Screen())!;
         processor.PlugDevice(0, new Hasm.Devices.Eeprom(32));
         processor.Load(program, DebugCallback);
+        processor.Push(10);   // args: cycles
 
+        string? lastScreenDisplay = null;
         while (!processor.IsFinished)
         {
-            Console.WriteLine($"[dbg]{new string(' ', 40)}NEW FRAME");
-            processor.Run(16);
+            processor.Run();
+
+            if (screen?.Display != lastScreenDisplay)
+            {
+                // Console.Clear();
+                Console.WriteLine(screen?.Display);
+                lastScreenDisplay = screen?.Display;
+            }
         }
         
         if (processor.HasError)
@@ -35,10 +43,7 @@ class Program
             Hasm.Result error = processor.LastError;
             Console.Error.WriteLine(
                 $"Runtime Error: {error.Error} ({error.Error:D}) '{error.RawInstruction}' at line {error.Line}");
-            return;
         }
-
-        Console.WriteLine(screen?.Display);
     }
     
     static void DebugCallback(Hasm.DebugData data)

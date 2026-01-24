@@ -3,7 +3,7 @@ namespace Hasm.Devices
 {
     // 0: Append chat (w)
     // 1: Clear (w)
-    public class Screen : Hasm.IDevice
+    public class Screen : IDevice
     {
         public string Display { get; private set; } = string.Empty;
     
