@@ -36,13 +36,13 @@ namespace Hasm
             _frequencyHz = frequencyHz;
         }
 
-        public bool PlugDevice(uint deviceSlot, IDevice device)
+        public T? PlugDevice<T>(uint deviceSlot, T device) where T : class, IDevice
         {
             if (deviceSlot >= _devices.Length)
-                return false;
+                return null;
             
             _devices[deviceSlot] = device;
-            return true;
+            return device;
         }
 
         public bool UnplugDevice(uint deviceSlot, IDevice device)

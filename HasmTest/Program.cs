@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-
 namespace HasmTest;
 
 class Program
@@ -21,9 +20,8 @@ class Program
         PrintProgramInfo(program);
         
         Hasm.Processor processor = new Hasm.Processor(numDevices: 4);
-        Screen screen = new Screen();
-        processor.PlugDevice(1, screen);
-        processor.PlugDevice(0, new Eeprom(32));
+        Hasm.Devices.Screen screen = processor.PlugDevice(1, new Hasm.Devices.Screen())!;
+        processor.PlugDevice(0, new Hasm.Devices.Eeprom(32));
         
         if (!processor.Run(program, DebugCallback))
         {
@@ -32,7 +30,7 @@ class Program
             return;
         }
         
-        Console.WriteLine(screen.Display);
+        Console.WriteLine(screen?.Display);
     }
     
     static void DebugCallback(Hasm.DebugData data)
@@ -58,111 +56,5 @@ class Program
 #endif
                           $"\n{b64}");
         Console.WriteLine($"[dbg]-----------------------------------------------------------------------------------------");
-    }
-}
-
-public class Screen : Hasm.IDevice
-{
-    public string Display { get; private set; } = string.Empty;
-    
-    public bool TryReadValue(int index, out double value)
-    {
-        value = 0d;
-        return false;
-    }
-
-    public bool TryWriteValue(int index, double value)
-    {
-        switch (index)
-        {
-            case 0 :
-                // Appends a character to the display.
-                Display += (char)value;
-                break;
-            
-            case 1 :
-                // Reset the display.
-                Display = string.Empty;
-                break;
-            
-            default:
-                return false;
-        }
-
-        return true;
-    }
-}
-
-// 0: index (w)
-// 1: value (rw)
-// 2: length (r)
-// 3: read_only (rw)
-public class Eeprom : Hasm.IDevice
-{
-    private readonly double[] _memory;
-    private uint _nextIndex;
-    private bool _readOnly;
-
-    public Eeprom(int size)
-    {
-        _memory = new double[size];
-    }
-
-    public Eeprom(double[] memory)
-    {
-        _memory = memory;
-    }
-
-    public bool TryReadValue(int index, out double value)
-    {
-        value = 0;
-        switch (index)
-        {
-            case 1 :
-                if (_nextIndex >= _memory.Length)
-                    return false;
-                value = _memory[_nextIndex];
-                break;
-            
-            case 2:
-                value = _memory.Length;
-                break;
-            
-            case 3:
-                value = _readOnly ? 1d : 0d;
-                break;
-            
-            default:
-                return false;
-        }
-
-        return true;
-    }
-
-    public bool TryWriteValue(int index, double value)
-    {
-        switch (index)
-        {
-            case 0 :
-                if (value < 0 || value >= _memory.Length)
-                    return false;
-                _nextIndex = (uint)value;
-                break;
-            
-            case 1 :
-                if (_nextIndex >= _memory.Length || _readOnly)
-                    return false;
-                _memory[_nextIndex] = value;
-                break;
-            
-            case 3:
-                _readOnly = value > 0d;
-                break;
-            
-            default:
-                return false;
-        }
-
-        return true;
     }
 }

@@ -1,12 +1,14 @@
+@require registers 3
+@require devices 1
+
 alias $eeprom_i d0.0
 alias $eeprom_v d0.1
 alias $eeprom_l d0.2
-
 alias $len r0
-rd $len $eeprom_l
-
-# fill the eeprom with 0-9 values
 alias $i r1
+
+# fill the eeprom with values
+rd $len $eeprom_l
 mov $i 0
 loop:
     wd $eeprom_i $i
@@ -14,8 +16,7 @@ loop:
     inc $i
     blt loop $i $len
     
-wd $eeprom_i 31
+dec $i
+wd $eeprom_i $i
 rd r2 $eeprom_v
-assert r2 31
-
-ret
+assert r2 $i
