@@ -1,22 +1,29 @@
-@require registers 3
-@require devices 1
+##############################
+##    EEPROM Device Test    ##
+##############################
 
-alias $eeprom_i d0.0
-alias $eeprom_v d0.1
-alias $eeprom_l d0.2
-alias $len r0
-alias $i r1
+@req    registers   4
+@req    devices     1
+
+alias   $eeprom_i   d0.0
+alias   $eeprom_v   d0.1
+alias   $eeprom_l   d0.2
+alias   $len        r0
+alias   $i          r1       
 
 # fill the eeprom with values
-rd $len $eeprom_l
-mov $i 0
-loop:
-    wd $eeprom_i $i
-    wd $eeprom_v $i
+rd      $len        $eeprom_l
+mov     $i          0
+loop: # for $i 0...len
+    wd  $eeprom_i   $i
+    wd  $eeprom_v   $i
     inc $i
-    blt loop $i $len
-    
-dec $i
-wd $eeprom_i $i
-rd r2 $eeprom_v
-assert r2 $i
+    blt loop        $i  $len
+
+# check last value    
+dec     $i
+wd      $eeprom_i   $i
+rd      r2          $eeprom_v
+assert  r2          $i
+
+ret

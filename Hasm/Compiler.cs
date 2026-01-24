@@ -93,7 +93,9 @@ namespace Hasm
             if (_skipLine[index])
                 return true;
                 
-            _lines[index] =  _lines[index].Trim();
+            _lines[index] = _lines[index].Replace("\t", " ");
+            _lines[index] = _lines[index].Trim();
+            _lines[index] = RegexCollection.MultipleSpaces.Replace(_lines[index], " ");
                 
             if (string.IsNullOrEmpty(_lines[index]))
                 _skipLine[index] = true;
@@ -838,9 +840,10 @@ namespace Hasm
         private static class RegexCollection
         {
             internal static readonly Regex EmptyLine = new Regex(@"^[\s\t]*$");
-            internal static readonly Regex Comments = new Regex(@"^[^;#]*(?<com>[;#]+.*)$");
+            internal static readonly Regex MultipleSpaces = new Regex(@"\s\s+");
+            internal static readonly Regex Comments = new Regex(@"^[^#]*(?<com>#+.*)$");
             internal static readonly Regex Aliases = new Regex(@"^alias\s+(?<alias>\$[A-Za-z0-9_]+)\s(?<dest>(?:r\d+|d\d+\.\d+|-?\d+[.]?\d*|r\d+\b))$");
-            internal static readonly Regex Requirements = new Regex(@"^@require\s+(?<type>registers|stack|devices|memory)\s+(?<val>\d+)$"); 
+            internal static readonly Regex Requirements = new Regex(@"^@req\s+(?<type>registers|stack|devices|memory)\s+(?<val>\d+)$"); 
             internal static readonly Regex Labels = new Regex(@"^(?<label>[A-Za-z0-9_]+)\s*:$"); 
             internal static readonly Regex LabelJumps = new Regex(@"^(?<opt>j|jal|beq|beqal|bneq|bneqal|bgt|bgtal|bgte|bgteal|blt|bltal|blte|blteal)\s+(?<label>[A-Za-z0-9_]+\b).*$");
             internal static readonly Regex LabelRegisters = new Regex(@"^ra|r\d+$");

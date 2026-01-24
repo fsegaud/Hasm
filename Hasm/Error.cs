@@ -9,7 +9,8 @@ namespace Hasm
         OperationNotSupported,
         
         // Processor
-        RequirementsNotMet = 200,
+        ProgramNotLoaded = 200,
+        RequirementsNotMet,
         OperationNotImplemented,
         RegisterOutOfBound,
         DivisionByZero,
@@ -24,7 +25,7 @@ namespace Hasm
         OutOfMemory,
         MemoryViolation,
         NullPointer,
-        MemoryAlreadyFree,
+        DoubleFree,
 #endif
         
         AssertFailed = 900,

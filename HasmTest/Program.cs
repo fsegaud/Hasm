@@ -22,14 +22,22 @@ class Program
         Hasm.Processor processor = new Hasm.Processor(numDevices: 4);
         Hasm.Devices.Screen screen = processor.PlugDevice(1, new Hasm.Devices.Screen())!;
         processor.PlugDevice(0, new Hasm.Devices.Eeprom(32));
-        
-        if (!processor.Run(program, DebugCallback))
+        processor.Load(program, DebugCallback);
+
+        while (!processor.IsFinished)
         {
-            Hasm.Result error = processor.LastError;
-            Console.Error.WriteLine( $"Runtime Error: {error.Error} ({error.Error:D}) '{error.RawInstruction}' at line {error.Line}");
-            return;
+            Console.WriteLine($"[dbg]{new string(' ', 40)}NEW FRAME");
+            processor.Run(16);
         }
         
+        if (processor.HasError)
+        {
+            Hasm.Result error = processor.LastError;
+            Console.Error.WriteLine(
+                $"Runtime Error: {error.Error} ({error.Error:D}) '{error.RawInstruction}' at line {error.Line}");
+            return;
+        }
+
         Console.WriteLine(screen?.Display);
     }
     

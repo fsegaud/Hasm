@@ -6,7 +6,6 @@ namespace Hasm
 {
     public class Processor
     {
-        private readonly int _frequencyHz;
         private readonly double[] _registers;
         private readonly double[] _stack;
 #if HASM_FEATURE_MEMORY
@@ -17,7 +16,14 @@ namespace Hasm
 
         private uint _stackPointer;
         private uint _returnAddress;
+        private int _instructionPointer;
         
+        private Program? _program;
+        private Action<DebugData>? _debugCallback;
+
+        public bool IsFinished => HasError || _instructionPointer >= _program?.Instructions.Length;
+
+        public bool HasError => LastError.Error != Error.Success;
         public  Result LastError { get; private set; }
         
 #if HASM_FEATURE_MEMORY
@@ -33,7 +39,6 @@ namespace Hasm
             _memoryBlocks = new uint[memoryLength];
 #endif
             _devices = new IDevice[numDevices];
-            _frequencyHz = frequencyHz;
         }
 
         public T? PlugDevice<T>(uint deviceSlot, T device) where T : class, IDevice
@@ -264,24 +269,37 @@ namespace Hasm
             return true;
         }
         
-        public bool Run(Program program, Action<DebugData>? debugCallback = null)
+        public void Load(Program program, Action<DebugData>? debugCallback = null)
         {
+            _program = program;
+            _debugCallback = debugCallback;
+            
             _stackPointer = 0;
             _returnAddress = 0;
-
+            _instructionPointer = -0;
+            
             LastError = Result.Success();
-
+            
             if (_registers.Length < program.RequiredRegisters || _stack.Length < program.RequiredStack || 
                 _devices.Length < program.RequiredDevices)
-            {
                 LastError = new Result(Error.RequirementsNotMet);
+        }
+        
+        public bool Run(int cycles = int.MaxValue)
+        {
+            if (_program == null)
+            {
+                LastError = new Result(Error.ProgramNotLoaded);
                 return false;
             }
+
+            if (IsFinished)
+                return true;
             
             bool breakLoop = false;
-            for (int index = 0; index < program.Instructions.Length && !breakLoop; index++)
+            for (int index = _instructionPointer; index < _program.Instructions.Length && !breakLoop && cycles > 0; index++, _instructionPointer++, cycles--)
             {
-                Instruction instruction = program.Instructions[index];
+                Instruction instruction = _program.Instructions[index];
 
                 double destinationValue;
                 double leftOperandValue = instruction.LeftOperandValue;
@@ -415,25 +433,27 @@ namespace Hasm
                     case Operation.Jump:
                     {
                         // ReSharper disable once UnusedVariable
-                        if (!TryResolveJump(program, ref instruction, out int destinationIndex, out uint returnAddress))
+                        if (!TryResolveJump(_program, ref instruction, out int destinationIndex, out uint returnAddress))
                         {
                             LastError = new Result(Error.InvalidJump, instruction);
                             return false;
                         }
                         
                         index = destinationIndex - 1;
+                        _instructionPointer = index;
                         break;
                     }
 
                     case Operation.JumpReturnAddress:
                     {
-                        if (!TryResolveJump(program, ref instruction, out int destinationIndex, out uint returnAddress))
+                        if (!TryResolveJump(_program, ref instruction, out int destinationIndex, out uint returnAddress))
                         {
                             LastError = new Result(Error.InvalidJump, instruction);
                             return false;
                         }
                         
                         index = destinationIndex - 1;
+                        _instructionPointer = index;
                         if (returnAddress > 0)
                             _returnAddress = returnAddress;
                         
@@ -454,7 +474,7 @@ namespace Hasm
                     case Operation.BranchLesserThanOrEqualReturnAddress:
                     {
                         // Resolve jump.
-                        if (!TryResolveJump(program, ref instruction, out int destinationIndex, out uint returnAddress))
+                        if (!TryResolveJump(_program, ref instruction, out int destinationIndex, out uint returnAddress))
                         {
                             LastError = new Result(Error.InvalidJump, instruction);
                             return false;
@@ -524,6 +544,7 @@ namespace Hasm
                         if (conditionMet)
                         {
                             index = destinationIndex - 1;
+                            _instructionPointer = index;
                             if (returnAddress > 0)
                                 _returnAddress = returnAddress;
                         }
@@ -626,11 +647,7 @@ namespace Hasm
                 if (LastError.Error != Error.Success)
                     return false;
                 
-                if (debugCallback != null)
-                    debugCallback.Invoke(GenerateDebugData(ref instruction));
-                
-                if (_frequencyHz > 0)
-                    Thread.Sleep(1000 / _frequencyHz);
+                _debugCallback?.Invoke(GenerateDebugData(ref instruction));
             }
 
             return true;
