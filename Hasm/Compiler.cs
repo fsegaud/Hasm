@@ -53,6 +53,7 @@ namespace Hasm
                 succeed &= Check(ParseDestinationOperations(index));
                 succeed &= Check(ParseUnaryOperations(index));
                 succeed &= Check(ParseBinaryOperations(index));
+                succeed &= Check(ParseDeviceOperations(index));
 #if HASM_FEATURE_MEMORY
                 succeed &= Check(ParseMemoryOperations(index));
 #endif
@@ -200,7 +201,6 @@ namespace Hasm
             Match match = RegexCollection.LabelJumps.Match(_lines[index]);
             if (match.Success)
             {
-                string opt = match.Groups["opt"].Value;
                 string label = match.Groups["label"].Value;
                     
                 if (!RegexCollection.LabelRegisters.Match(label).Success)
@@ -211,7 +211,7 @@ namespace Hasm
                         return false;
                     }
 
-                    _lines[index] = $"{opt} {jumpLine}";
+                    _lines[index] = _lines[index].Replace(label, jumpLine.ToString()).TrimEnd();
                 }
 
                 // TODO ???
@@ -679,6 +679,82 @@ namespace Hasm
             return true;
         }
         
+        private bool ParseDeviceOperations(uint index)
+        {
+            if (_skipLine[index])
+                    return true;
+                
+            Match readMatch = RegexCollection.ReadDeviceOperations.Match(_lines[index]);
+            Match writeMatch = RegexCollection.WriteDeviceOperations.Match(_lines[index]);
+            Match match = readMatch.Success ? readMatch : writeMatch;
+                
+            if (match.Success)
+            {
+                string opt = match.Groups["opt"].Value;
+                string opd = match.Groups["opd"].Value;
+                string opl = match.Groups["opl"].Value;
+                
+                Instruction instruction = default;
+                instruction.RawText = _lines[index];
+                instruction.Line = index + 1;
+                
+                switch (opt)
+                {
+                    case "rdev": instruction.Operation = Operation.ReadWriteDevice; break;
+                    case "wdev": instruction.Operation = Operation.ReadWriteDevice; break;
+                    case "rd": instruction.Operation = Operation.ReadWriteDevice; break;
+                    case "wd": instruction.Operation = Operation.ReadWriteDevice; break;
+                    default:
+                    {
+                        LastError = new Result(Error.OperationNotSupported, instruction);
+                        return false;
+                    }
+                }
+                
+                if (opd.StartsWith("r"))
+                {
+                    instruction.DestinationRegistryType = Instruction.OperandType.UserRegister;
+                    instruction.Destination = uint.Parse(opd.Substring(1));
+                }
+                else if (opd.StartsWith("d"))
+                {
+                    uint deviceSlot = uint.Parse(opd.Substring(1, opd.IndexOf(".", StringComparison.InvariantCulture) - 1));
+                    uint deviceRegister = uint.Parse(opd.Substring(opd.IndexOf(".", StringComparison.InvariantCulture) + 1));
+                    instruction.DestinationRegistryType = Instruction.OperandType.DeviceRegister;
+                    instruction.Destination = deviceSlot << 16 | deviceRegister; // TODO: Check overflow
+                }
+                else
+                {
+                    LastError = new Result(Error.SyntaxError, instruction);
+                    return false;
+                }
+                
+                // TODO: Put all that in a function, goddamit!
+                if (opl[0] == 'r')
+                {
+                    instruction.LeftOperandType = Instruction.OperandType.UserRegister;
+                    instruction.LeftOperandValue = int.Parse(opl.Substring(1));
+                }
+                else if (opl.StartsWith("d"))
+                {
+                    uint deviceSlot = uint.Parse(opl.Substring(1, opl.IndexOf(".", StringComparison.InvariantCulture) - 1));
+                    uint deviceRegister = uint.Parse(opl.Substring(opl.IndexOf(".", StringComparison.InvariantCulture) + 1));
+                    instruction.LeftOperandType = Instruction.OperandType.DeviceRegister;
+                    instruction.LeftOperandValue = deviceSlot << 16 | deviceRegister; // TODO: Check overflow
+                }
+                else
+                {
+                    instruction.LeftOperandType = Instruction.OperandType.Literal;
+                    instruction.LeftOperandValue = float.Parse(opl, CultureInfo.InvariantCulture);
+                }
+                
+                _skipLine[index] = true;
+                _instructions.Add(instruction);
+            }
+
+            return true;
+        }
+        
 #if HASM_FEATURE_MEMORY
         private bool ParseMemoryOperations(uint index)
         {
@@ -763,11 +839,10 @@ namespace Hasm
         {
             internal static readonly Regex EmptyLine = new Regex(@"^[\s\t]*$");
             internal static readonly Regex Comments = new Regex(@"^[^;#]*(?<com>[;#]+.*)$");
-            internal static readonly Regex Aliases = new Regex(@"^alias\s+(?<alias>\$\w+)\s(?<dest>(?:r\d+|d\d+\.\d+|-?\d+[.]?\d*|r\d+\b))$");
+            internal static readonly Regex Aliases = new Regex(@"^alias\s+(?<alias>\$[A-Za-z0-9_]+)\s(?<dest>(?:r\d+|d\d+\.\d+|-?\d+[.]?\d*|r\d+\b))$");
             internal static readonly Regex Requirements = new Regex(@"^@require\s+(?<type>registers|stack|devices|memory)\s+(?<val>\d+)$"); 
-            
-            internal static readonly Regex Labels = new Regex(@"^(?<label>[A-Za-z_]+)\s*:$"); 
-            internal static readonly Regex LabelJumps = new Regex(@"^(?<opt>j|jal)\s+(?<label>[A-Za-z_]+\b)$");
+            internal static readonly Regex Labels = new Regex(@"^(?<label>[A-Za-z0-9_]+)\s*:$"); 
+            internal static readonly Regex LabelJumps = new Regex(@"^(?<opt>j|jal|beq|beqal|bneq|bneqal|bgt|bgtal|bgte|bgteal|blt|bltal|blte|blteal)\s+(?<label>[A-Za-z0-9_]+\b).*$");
             internal static readonly Regex LabelRegisters = new Regex(@"^ra|r\d+$");
             
             internal static readonly Regex JumpOperations = new Regex(@"^(?<opt>j|jal)\s+(?<opd>r\d+\b|ra|[1-9]\d*\b)$");
@@ -775,8 +850,10 @@ namespace Hasm
             internal static readonly Regex StackOperations = new Regex(@"^(?<opt>push|pop|peek)\s+(?<opd>r\d+\b|ra|sp)$");
             internal static readonly Regex SelfOperations = new Regex(@"^(?<opt>nop|ret)$");
             internal static readonly Regex DestinationOperations = new Regex(@"^(?<opt>inc|dec)\s+(?<opd>r\d+\b|ra|sp)$"); 
-            internal static readonly Regex UnaryOperations = new Regex(@"^(?<opt>mov|sqrt|assert)\s+(?<opd>r\d+\b|d\d+\.\d+\b|ra|sp)\s+(?<opl>-?\d+[.]?\d*|r\d+\b|d\d+\.\d+|ra|sp)$"); // TODO: Generalize devices in other regex. 
+            internal static readonly Regex UnaryOperations = new Regex(@"^(?<opt>mov|sqrt|assert)\s+(?<opd>r\d+\b||ra|sp)\s+(?<opl>-?\d+[.]?\d*|r\d+\b|ra|sp)$");
             internal static readonly Regex BinaryOperations = new Regex(@"^(?<opt>add|sub|mul|div|eq|neq|gt|gte|lt|lte)\s+(?<opd>r\d+\b|ra|sp)\s+(?<opl>-?\d+[.]?\d*|r\d+\b|ra|sp)\s+(?<opr>-?\d+[.]?\d*|r\d+\b|ra|sp)$");
+            internal static readonly Regex ReadDeviceOperations = new Regex(@"^(?<opt>rdev|rd)\s+(?<opd>r\d+\b)\s+(?<opl>d\d+\.\d+)$");
+            internal static readonly Regex WriteDeviceOperations = new Regex(@"^(?<opt>wdev|wd)\s+(?<opd>d\d+\.\d+\b)\s+(?<opl>r\d+\b|-?\d+[.]?\d*|r\d+\b)$");
 
 #if HASM_FEATURE_MEMORY
             internal static readonly Regex AllocateMemory = new Regex(@"^(?<opt>malloc)\s+(?<opd>r\d+\b)\s+(?<opl>\d+)$"); 

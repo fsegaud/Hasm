@@ -530,6 +530,10 @@ namespace Hasm
 
                         break;
                     }
+                    
+                    case Operation.ReadWriteDevice:
+                        TrySetDestination(ref instruction, leftOperandValue);
+                        break;
 
 #if HASM_FEATURE_MEMORY
                     case Operation.AllocateMemory:

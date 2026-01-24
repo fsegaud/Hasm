@@ -1,54 +1,21 @@
-@require registers 4
-@require stack 2
-@require devices 2
-#@require memory 8
+alias $eeprom_i d0.0
+alias $eeprom_v d0.1
+alias $eeprom_l d0.2
 
-###### Test EEPROM ######
-alias $eeprom_i d1.0
-alias $eeprom_v d1.1
-mov $eeprom_i 4
-mov $eeprom_v 55
-mov $eeprom_i 2
-mov r0 $eeprom_v
-mov $eeprom_i 4
-mov r1 $eeprom_v
-assert r0 0
-assert r1 55
+alias $len r0
+rd $len $eeprom_l
+
+# fill the eeprom with 0-9 values
+alias $i r1
+mov $i 0
+loop:
+    wd $eeprom_i $i
+    wd $eeprom_v $i
+    inc $i
+    blt loop $i $len
+    
+wd $eeprom_i 31
+rd r2 $eeprom_v
+assert r2 31
+
 ret
-########################
-
-main:
-    # variables
-    alias $a r0
-    alias $b r1
-    alias $d_rom d0.0
-    alias $d_screen d2.0
-
-    # declare values
-    mov $a 10
-    mov $b 5
-    
-    # push values
-    push $a
-    push $b
-    
-    # call function
-    jal f_add
-    
-    # pop and test result
-    pop $a
-    assert $a 15
-    
-    # store on device
-    mov $d_rom $a
-    mov r7 $d_rom
-    mov $d_screen r7
-    
-    ret 
-
-f_add:
-    pop r3
-    pop r2
-    add r2 r2 r3
-    push r2
-    j ra
