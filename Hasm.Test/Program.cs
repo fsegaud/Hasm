@@ -80,7 +80,9 @@ static class Program
 
     private class TestConfiguration
     {
+#pragma warning disable CS0649 // Field is assigned through json.
         public TestDescriptor[]? TestDescriptors;
+#pragma warning restore CS0649
 
         public static TestConfiguration? Load(string path)
         {
@@ -100,9 +102,11 @@ static class Program
         
         public class TestDescriptor
         {
-            public string SourceFile;
-            [JsonConverter(typeof(StringEnumConverter))]public Error CompilerError;
-            [JsonConverter(typeof(StringEnumConverter))]public Error RuntimeError;
+#pragma warning disable CS0649 // Field is assigned through json.
+            public required string SourceFile;
+            [JsonConverter(typeof(StringEnumConverter))]public required Error CompilerError;
+            [JsonConverter(typeof(StringEnumConverter))]public required Error RuntimeError;
+#pragma warning restore CS0649
         }
     }
 
