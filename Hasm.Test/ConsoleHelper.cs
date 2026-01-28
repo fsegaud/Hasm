@@ -2,7 +2,7 @@ namespace Hasm.Test;
 
 public static class ConsoleHelper
 {
-    public static void DebugCallback(Hasm.DebugData data)
+    public static void DebugCallback(DebugData data)
     {
         Console.WriteLine($"[dbg]    ln: {data.Line:d4} > {data.RawInstruction}");
         Console.WriteLine($"[dbg]    ra: {data.ReturnAddress:d4}   registers: {string.Join(' ',  data.Registers)}");
