@@ -1,0 +1,75 @@
+@req registers 2
+
+# bne
+mov     r0 0
+mov     r1 0
+bne     8 r0 0
+    inc r0
+inc     r1
+assert  r0 1
+assert  r1 1
+
+mov     r0 0
+mov     r1 0
+bne     label6 r0 0
+    inc r0
+label6:
+    inc r1
+assert  r0 1
+assert  r1 1
+
+mov     r0 0
+mov     r1 0
+bne     25 r0 1
+    inc r0
+inc     r1
+assert  r0 0
+assert  r1 1
+
+mov     r0 0
+mov     r1 0
+bne     label8 r0 1
+    inc r0
+label8:
+    inc r1
+assert  r0 0
+assert  r1 1
+
+# bneal
+mov     r0 0
+mov     r1 0
+bneal   43 r0 0
+    inc r0
+inc     r1
+assert  r0 1
+assert  r1 1
+nop
+
+mov     r0 0
+mov     r1 0
+bneal   label9 r0 0
+    inc r0
+label9:
+    inc r1
+assert  r0 1
+assert  r1 1
+nop
+
+mov     r0 0
+mov     r1 0
+bneal   62 r0 1
+    inc r0
+inc     r1
+assert  r0 0
+assert  r1 1
+assert  ra 61
+
+mov     r0 0
+mov     r1 0
+bneal   label10 r0 1
+    inc r0
+label10:
+    inc r1
+assert  r0 0
+assert  r1 1
+assert  ra 70

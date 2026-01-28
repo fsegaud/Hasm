@@ -1,0 +1,41 @@
+@req registers 2
+
+# j
+mov     r0 0
+mov     r1 0
+j       8
+    inc r0
+inc     r1
+assert  r0 0
+assert  r1 1
+assert  ra 0
+
+mov     r0 0
+mov     r1 0
+j       label0
+    inc r0
+label0:
+    inc r1
+assert  r0 0
+assert  r1 1
+assert  ra 0
+
+# jal
+mov     r0 0
+mov     r1 0
+jal     28
+    inc r0
+inc     r1
+assert  r0 0
+assert  r1 1
+assert  ra 27
+
+mov     r0 0
+mov     r1 0
+jal     label1
+    inc r0
+label1:
+    inc r1
+assert  r0 0
+assert  r1 1
+assert  ra 36

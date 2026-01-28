@@ -18,7 +18,7 @@ namespace Hasm
         NaN,
         StackOverflow,
         InvalidJump,
-        DeviceOverflow,
+        DeviceOutOfBound,
         DeviceUnplugged,
         DeviceFailed,
 #if HASM_FEATURE_MEMORY

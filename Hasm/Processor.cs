@@ -96,7 +96,7 @@ namespace Hasm
                     
                     if (deviceSlot >= _devices.Length)
                     {
-                        LastError = new Result(Error.DeviceOverflow, instruction);
+                        LastError = new Result(Error.DeviceOutOfBound, instruction);
                         return false;
                     }
                     
@@ -156,7 +156,7 @@ namespace Hasm
                     
                     if (deviceSlot >= _devices.Length)
                     {
-                        LastError = new Result(Error.DeviceOverflow, instruction);
+                        LastError = new Result(Error.DeviceOutOfBound, instruction);
                         return false;
                     }
                     
@@ -215,7 +215,7 @@ namespace Hasm
                     
                     if (deviceSlot >= _devices.Length)
                     {
-                        LastError = new Result(Error.DeviceOverflow, instruction);
+                        LastError = new Result(Error.DeviceOutOfBound, instruction);
                         return false;
                     }
                     
