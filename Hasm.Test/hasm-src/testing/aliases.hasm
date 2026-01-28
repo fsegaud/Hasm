@@ -5,3 +5,8 @@ alias   $rzero r0
 mov     $rzero $one
 assert  $rzero $one
 assert  r0 1
+
+wd d0.2 $one
+rd $rzero d0.2
+assert r0 2
+ 

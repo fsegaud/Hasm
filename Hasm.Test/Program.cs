@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace Hasm.Test;
 
@@ -15,6 +16,7 @@ static class Program
 
         Compiler compiler = new Compiler();
         Processor processor = new Processor(8, 8, 2);
+        processor.PlugDevice(0, new TestDevice());
 
         TestConfiguration? testConfiguration = TestConfiguration.Load(TestConfigurationFile);
         if (testConfiguration?.TestDescriptors == null)
@@ -102,7 +104,24 @@ static class Program
     private class TestDescriptor
     {
         public string SourceFile;
-        public Error CompilerError;
-        public Error RuntimeError;
+        [JsonConverter(typeof(StringEnumConverter))]public Error CompilerError;
+        [JsonConverter(typeof(StringEnumConverter))]public Error RuntimeError;
+    }
+
+    private class TestDevice : IDevice
+    {
+        private double _value;
+        
+        public bool TryReadValue(int index, out double value)
+        {
+            value = _value;
+            return index > 0;
+        }
+
+        public bool TryWriteValue(int index, double value)
+        {
+            _value = index * value;
+            return index > 0;
+        }
     }
 }

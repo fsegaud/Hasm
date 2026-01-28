@@ -1,0 +1,3 @@
+@req devices 2
+
+rd r0 d1.0
