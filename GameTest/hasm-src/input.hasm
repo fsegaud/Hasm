@@ -1,0 +1,29 @@
+input_process_key:
+    push ra
+    
+    rd r4 $keyboard
+    beq _end r4 $KEY_Q
+    
+    # apply movement
+    eq  r5  r4  $KEY_RIGHT
+    add $px $px r5
+    eq  r5  r4  $KEY_LEFT
+    sub $px $px r5
+    eq  r5  r4  $KEY_UP
+    sub $py $py r5
+    eq  r5  r4  $KEY_DOWN
+    add $py $py r5
+    
+    # clamp to borders
+    max $px $px 1
+    mov r4  $SCR_W
+    sub r4  r4  2
+    min $px $px r4
+    max $py $py 1
+    mov r4  $SCR_H
+    sub r4  r4  2
+    min $py $py r4
+ 
+    pop ra
+    j ra
+# input_process_key

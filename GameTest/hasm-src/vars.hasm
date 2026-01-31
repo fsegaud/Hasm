@@ -1,0 +1,19 @@
+define  $SCR_W          24
+define  $SCR_H          8
+define  $GRAPH_BG       32
+define  $GRAPH_BORDER   9608
+define  $GRAPH_PLAYER   64
+
+define  $KEY_UP         38
+define  $KEY_DOWN       40
+define  $KEY_LEFT       37
+define  $KEY_RIGHT      39
+define  $KEY_Q          81
+
+define  $px             r0
+define  $py             r1
+define  $i              r2
+define  $stop           r3
+define  $screen_i       d0.0
+define  $screen_v       d0.1
+define  $keyboard       d1.0
