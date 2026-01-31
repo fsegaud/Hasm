@@ -1,4 +1,6 @@
-namespace Hasm.Test;
+using Hasm;
+
+namespace GameTest;
 
 public static class ConsoleHelper
 {

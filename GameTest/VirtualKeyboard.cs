@@ -1,7 +1,7 @@
 namespace GameTest;
 
 // 0 -> KeyCode
-public class ConsoleKeyboard : Hasm.IDevice
+public class VirtualKeyboard : Hasm.IDevice
 {
     public int KeyCode { get; set; }
     

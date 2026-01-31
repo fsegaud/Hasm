@@ -1,7 +1,5 @@
 input_process_key:
-    push ra
-    
-    rd r4 $keyboard
+    rd  r4   $keyboard
     beq _end r4 $KEY_Q
     
     # apply movement
@@ -23,7 +21,5 @@ input_process_key:
     mov r4  $SCR_H
     sub r4  r4  2
     min $py $py r4
- 
-    pop ra
-    j ra
+    j   ra
 # input_process_key
