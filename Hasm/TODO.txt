@@ -5,7 +5,6 @@
 - binary operations
 - angular operations
 - register indirection
-- rnd generator
 
 - test: args
 - test : device 

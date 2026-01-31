@@ -366,7 +366,7 @@ namespace Hasm
 
                         TrySetDestination(ref instruction, leftOperandValue / rightOperandValue);
                         break;
-                    
+
                     case Operation.SquareRoot:
                         if (leftOperandValue < 0)
                         {
@@ -377,6 +377,38 @@ namespace Hasm
                         TrySetDestination(ref instruction, Math.Sqrt(leftOperandValue));
                         break;
                     
+                    case Operation.Power:
+                        TrySetDestination(ref instruction, Math.Pow(leftOperandValue, rightOperandValue));
+                        break;
+
+                    case Operation.RandomDouble:
+                    {
+                        if (leftOperandValue > rightOperandValue)
+                        {
+                            LastError = new Result(Error.BadArguments, instruction);
+                            return false;
+                        }
+                        
+                        Random random = new Random();
+                        TrySetDestination(ref instruction, leftOperandValue + random.NextDouble() * (rightOperandValue - leftOperandValue));
+                        
+                        break;
+                    }
+                    
+                    case Operation.RandomInteger:
+                    {
+                        if (leftOperandValue > rightOperandValue)
+                        {
+                            LastError = new Result(Error.BadArguments, instruction);
+                            return false;
+                        }
+                        
+                        Random random = new Random();
+                        TrySetDestination(ref instruction, random.Next((int)leftOperandValue, (int)rightOperandValue + 1));
+                        
+                        break;
+                    }
+
                     case Operation.Increment:
                     {
                         if (!TryGetDestination(ref instruction, out destinationValue))

@@ -18,6 +18,7 @@ namespace Hasm
         RegisterOutOfBound,
         DivisionByZero,
         NaN,
+        BadArguments,
         StackOverflow,
         InvalidJump,
         DeviceOutOfBound,

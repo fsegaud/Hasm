@@ -51,12 +51,22 @@
       "SourceFile": "hasm-src/tests/math-misc.hasm"
     },
     {
+      "SourceFile": "hasm-src/tests/math-sqrt-pow.hasm"
+    },
+    {
       "SourceFile": "hasm-src/tests/math-dividezero.hasm",
       "RuntimeError": "DivisionByZero"
     },
     {
       "SourceFile": "hasm-src/tests/math-sqrtneg.hasm",
       "RuntimeError": "NaN"
+    },
+    {
+      "SourceFile": "hasm-src/tests/random.hasm"
+    },
+    {
+      "SourceFile": "hasm-src/tests/random-badargs.hasm",
+      "RuntimeError": "BadArguments"
     },
     {
       "SourceFile": "hasm-src/tests/comparison.hasm"
