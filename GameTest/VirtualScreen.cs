@@ -2,7 +2,7 @@ namespace GameTest;
 
 // 0 -> Index
 // 1 -> Value
-public class ConsoleScreen(int width, int height) : Hasm.IDevice
+public class VirtualScreen(int width, int height) : Hasm.IDevice
 {
     private uint _nextIndex;
     

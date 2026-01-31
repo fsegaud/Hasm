@@ -13,9 +13,7 @@ _main:
     
     _gameloop:
         jal   input_process_key
-        jal   graphics_draw_background
-        jal   graphics_draw_borders
-        jal   graphics_draw_player
+        jal   graphics_draw
         yield
         j     _gameloop
 

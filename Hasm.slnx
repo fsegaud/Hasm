@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="GameTest/GameTest.csproj" />
   <Project Path="Hasm.Devices/Hasm.Devices.csproj" />
   <Project Path="Hasm.Test/Hasm.Test.csproj" />
   <Project Path="Hasm/Hasm.csproj" />
