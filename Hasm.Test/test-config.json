@@ -103,6 +103,13 @@
     {
       "SourceFile": "hasm-src/tests/watchdog.hasm",
       "RuntimeError" : "WatchdogBark"
+    },
+    {
+      "SourceFile": "hasm-src/tests/include.hasm"
+    },
+    {
+      "SourceFile": "hasm-src/tests/include-filenotfound.hasm",
+      "CompilerError" : "FileNotFound"
     }
   ]
 }

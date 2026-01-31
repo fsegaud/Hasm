@@ -8,6 +8,8 @@ namespace Hasm
         SyntaxError = 100,
         OperationNotSupported,
         LabelNotFound,
+        FileNotFound,
+        IoError,
         
         // Processor
         ProgramNotLoaded = 200,

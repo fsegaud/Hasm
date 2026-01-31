@@ -1,14 +1,12 @@
-define $check 0
-beq if0 r0 $check
-j else0
-if0:
-    inc r1
-    j endif0
-else0:
-    inc r0
-endif0:
+@req registers 2
+@req stack 2
+
+@inc lib/math.hasm
+
+mov r0 3
+mov r1 4
+push r0
 push r1
-pop r2
-assert r0 $check
-jal 14
-ret
+jal math_v2len
+pop r0
+assert r0 5

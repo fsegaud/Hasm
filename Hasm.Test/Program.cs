@@ -46,7 +46,7 @@ static class Program
             }
             
             // Compile.
-            Hasm.Program? program = compiler.Compile(srcContent, buildTarget);
+            Hasm.Program? program = compiler.Compile(srcContent, buildTarget, "hasm-src");
             if (compiler.LastError.Error == test.CompilerError)
             {
                 if (showInfo && program != null)

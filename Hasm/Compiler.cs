@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
@@ -17,7 +20,7 @@ namespace Hasm
         
         public  Result LastError { get; private set; }
         
-        public Program? Compile(string input, BuildTarget buildTarget = BuildTarget.Debug, Action<string>? debugCallback = null)
+        public Program? Compile(string input, BuildTarget buildTarget = BuildTarget.Debug, string srcPath = "")
         {
             _lines = input.Split('\n');
             _rawLines = new string[_lines.Length];
@@ -38,6 +41,15 @@ namespace Hasm
             {
                 succeed &= Check(ParseSpaceAndTabs(index));
                 succeed &= Check(ParseComments(index));
+                succeed &= Check(ParseIncludes(index,srcPath, ref _lines));
+                
+                // Check if include added new lines.
+                if (_skipLine.Length != _lines.Length)
+                {
+                    Array.Resize(ref _rawLines, _lines.Length);
+                    Array.Resize(ref _skipLine, _lines.Length);
+                }
+                
                 _rawLines[index] = _lines[index];
             }
             
@@ -187,6 +199,44 @@ namespace Hasm
 #endif
                     default: throw new NotSupportedException();
                 }
+
+                _skipLine[index] = true;
+            }
+
+            return true;
+        }
+        
+        private bool ParseIncludes(uint index, string srcPath, ref string[] lines)
+        {
+            if (_skipLine[index])
+                return true;
+                
+            Match match = RegexCollection.Include.Match(_lines[index]);
+            if (match.Success)
+            {
+                string src =  match.Groups["src"].Value;
+                src = Path.Combine(srcPath, src);
+                if (!File.Exists(src))
+                {
+                    LastError = new Result(Error.FileNotFound, index + 1);
+                    return false;
+                }
+
+                string[] includeLines;
+                try
+                {
+                    includeLines = File.ReadAllLines(src);
+                }
+                catch (IOException e)
+                {
+                    LastError = new Result(Error.IoError, index + 1);
+                    return false;
+                }
+
+                string[] newLines = new string[_lines.Length + includeLines.Length];
+                Array.Copy(_lines, 0, newLines, 0, _lines.Length);
+                Array.Copy(includeLines, 0, newLines, _lines.Length, includeLines.Length);
+                _lines = newLines;
 
                 _skipLine[index] = true;
             }
@@ -964,6 +1014,7 @@ namespace Hasm
             internal static readonly Regex Comments = new Regex(@"^[^#]*(?<com>#+.*)$");
             internal static readonly Regex Defines = new Regex(@"^define\s+(?<alias>\$[A-Za-z0-9_]+)\s(?<dest>(?:r\d+|d\d+\.\d+|-?\d+[.]?\d*|r\d+\b|0x[0-9a-fA-F]+\b))$");
             internal static readonly Regex Requirements = new Regex(@"^@req\s+(?<type>registers|stack|devices|memory)\s+(?<val>\d+|0x[0-9a-fA-F]+\b)$"); 
+            internal static readonly Regex Include = new Regex(@"^@inc\s+(?<src>.+\b)$"); 
             internal static readonly Regex Labels = new Regex(@"^(?<label>[A-Za-z_][A-Za-z0-9_]+)\s*:$"); 
             internal static readonly Regex LabelJumps = new Regex(@"^(?<opt>j|jal|beq|beqal|bneq|bneqal|bne|bneal|bgt|bgtal|bgte|bgteal|blt|bltal|blte|blteal)\s+(?<label>[A-Za-z_][A-Za-z0-9_]+\b).*$");
             internal static readonly Regex LabelRegisters = new Regex(@"^ra|r\d+$");

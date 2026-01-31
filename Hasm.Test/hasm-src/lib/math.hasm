@@ -1,6 +1,6 @@
-@req registers 2
+ret # start with a 'ret' to avoid executing functions after main file end.
 
-libmath_v2len:
+math_v2len:
     pop  r0
     pop  r1
     mul  r0 r0 r0
