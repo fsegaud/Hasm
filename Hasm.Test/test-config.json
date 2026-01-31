@@ -102,6 +102,9 @@
       "SourceFile": "hasm-src/tests/approx.hasm"
     },
     {
+      "SourceFile": "hasm-src/tests/min-max.hasm"
+    },
+    {
       "SourceFile": "hasm-src/tests/branching-j.hasm"
     },
     {

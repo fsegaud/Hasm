@@ -1,0 +1,23 @@
+@inc vars.hasm
+@inc graphics.hasm
+@inc input.hasm
+
+@req registers 6
+@req stack     1
+@req devices   2
+
+_main:
+    # initial player position
+    mov $px 11
+    mov $py 3
+    
+    _gameloop:
+        jal   input_process_key
+        jal   graphics_draw_background
+        jal   graphics_draw_borders
+        jal   graphics_draw_player
+        yield
+        j     _gameloop
+
+_end:
+    ret

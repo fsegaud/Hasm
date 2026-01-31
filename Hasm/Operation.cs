@@ -27,6 +27,8 @@ namespace Hasm
         Jump,
         JumpReturnAddress,
         Approx,
+        Minimum,
+        Maximum,
         Equal,
         NotEqual,
         GreaterThan,

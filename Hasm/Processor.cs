@@ -481,6 +481,14 @@ namespace Hasm
                         TrySetDestination(ref instruction, Math.Abs(leftOperandValue - rightOperandValue) < 0.00001 ? 1d : 0d);
                         break;
                     
+                    case Operation.Minimum:
+                        TrySetDestination(ref instruction, Math.Min(leftOperandValue, rightOperandValue));
+                        break;
+                    
+                    case Operation.Maximum:
+                        TrySetDestination(ref instruction, Math.Max(leftOperandValue, rightOperandValue));
+                        break;
+                    
                     case Operation.Equal:
                         TrySetDestination(ref instruction, Math.Abs(leftOperandValue - rightOperandValue) < double.Epsilon ? 1d : 0d);
                         break;
