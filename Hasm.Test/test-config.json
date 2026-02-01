@@ -58,6 +58,10 @@
       "RuntimeError": "DivisionByZero"
     },
     {
+      "SourceFile": "hasm-src/tests/math-modulozero.hasm",
+      "RuntimeError": "DivisionByZero"
+    },
+    {
       "SourceFile": "hasm-src/tests/math-sqrtneg.hasm",
       "RuntimeError": "NaN"
     },
