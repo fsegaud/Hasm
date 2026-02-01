@@ -10,6 +10,7 @@ namespace Hasm
         Decrement,
         Multiply,
         Divide,
+        Modulo,
         Power,
         SquareRoot,
         RandomInteger,

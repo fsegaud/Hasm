@@ -370,6 +370,16 @@ namespace Hasm
 
                         TrySetDestination(ref instruction, leftOperandValue / rightOperandValue);
                         break;
+                    
+                    case Operation.Modulo:
+                        if (rightOperandValue == 0)
+                        {
+                            LastError = new Result(Error.DivisionByZero, instruction);
+                            return false;
+                        }
+                        
+                        TrySetDestination(ref instruction, leftOperandValue % rightOperandValue);
+                        break;
 
                     case Operation.SquareRoot:
                         if (leftOperandValue < 0)
