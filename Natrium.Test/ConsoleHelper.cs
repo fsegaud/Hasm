@@ -1,10 +1,10 @@
-namespace GameTest;
+namespace Natrium.Test;
 
 public static class ConsoleHelper
 {
-    private static Natrium.DebugData _prevData; 
+    private static DebugData _prevData; 
     
-    public static void DebugCallback(Natrium.DebugData data)
+    public static void DebugCallback(DebugData data)
     {
         Console.ForegroundColor = ConsoleColor.DarkGray;
         Console.WriteLine("-----------------------------------------------------------------------------------------");
@@ -167,7 +167,7 @@ public static class ConsoleHelper
         Console.WriteLine($" {stage} {Path.GetFileName(testName)}");
     }
     
-    public static void PrintFailedTest(string testName, Natrium.Result result, string stage)
+    public static void PrintFailedTest(string testName, Result result, string stage)
     {
         Console.Write("[");
         Console.ForegroundColor = ConsoleColor.Red;

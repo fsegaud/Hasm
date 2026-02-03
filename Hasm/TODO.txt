@@ -1,9 +1,0 @@
-- memory / arrays
-- gh actions
-
-- cleanup
-- binary operations
-- register indirection
-
-- test: args
-- test : device 

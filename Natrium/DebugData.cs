@@ -1,0 +1,19 @@
+namespace Natrium
+{
+    public struct DebugData
+    {
+        public uint Frame;
+        public uint Line;
+        public string RawInstruction;
+        public string PreprocessedInstruction;
+        public string EncodedInstruction;
+        public double[] Registers;
+        public double[] Stack;
+        public uint StackPointer;
+        public uint ReturnAddress;
+#if NATRIUM_FEATURE_MEMORY 
+        public double[] Memory;
+        public uint[] MemoryBlocks;
+#endif
+    }
+}

@@ -1,0 +1,162 @@
+{
+  "TestDescriptors": [
+    {
+      "SourceFile": "src/tests/syntax-error.na",
+      "CompilerError": "SyntaxError"
+    },{
+      "SourceFile": "src/tests/requirements-registers.na",
+      "RuntimeError": "RequirementsNotMet"
+    },
+    {
+      "SourceFile": "src/tests/requirements-stack.na",
+      "RuntimeError": "RequirementsNotMet"
+    },
+    {
+      "SourceFile": "src/tests/requirements-devices.na",
+      "RuntimeError": "RequirementsNotMet"
+    },
+    {
+      "SourceFile": "src/tests/registers.na"
+    },
+    {
+      "SourceFile": "src/tests/register-oob.na",
+      "RuntimeError": "RegisterOutOfBound"
+    },
+    {
+      "SourceFile": "src/tests/stack.na"
+    },
+    {
+      "SourceFile": "src/tests/stack-overflow.na",
+      "RuntimeError": "StackOverflow"
+    },
+    {
+      "SourceFile": "src/tests/ret.na"
+    },
+    {
+      "SourceFile": "src/tests/yield.na"
+    },
+    {
+      "SourceFile": "src/tests/sleep.na"
+    },
+    {
+      "SourceFile": "src/tests/define.na"
+    },
+    {
+      "SourceFile": "src/tests/math-add-sub.na"
+    },
+    {
+      "SourceFile": "src/tests/math-mul-div-mod.na"
+    },
+    {
+      "SourceFile": "src/tests/math-misc.na"
+    },
+    {
+      "SourceFile": "src/tests/math-sqrt-pow.na"
+    },
+    {
+      "SourceFile": "src/tests/math-dividezero.na",
+      "RuntimeError": "DivisionByZero"
+    },
+    {
+      "SourceFile": "src/tests/math-modulozero.na",
+      "RuntimeError": "DivisionByZero"
+    },
+    {
+      "SourceFile": "src/tests/math-sqrtneg.na",
+      "RuntimeError": "NaN"
+    },
+    {
+      "SourceFile": "src/tests/math-trigo.na"
+    },
+    {
+      "SourceFile": "src/tests/math-trigo-badargs0.na",
+      "RuntimeError" : "BadArguments"
+    },
+    {
+      "SourceFile": "src/tests/math-trigo-badargs1.na",
+      "RuntimeError" : "BadArguments"
+    },
+    {
+      "SourceFile": "src/tests/math-trigo-badargs2.na",
+      "RuntimeError" : "BadArguments"
+    },
+    {
+      "SourceFile": "src/tests/math-trigo-badargs3.na",
+      "RuntimeError" : "BadArguments"
+    },
+    {
+      "SourceFile": "src/tests/math-trigo-badargs4.na",
+      "RuntimeError" : "BadArguments"
+    },
+    {
+      "SourceFile": "src/tests/math-trigo-badargs5.na",
+      "RuntimeError" : "BadArguments"
+    },
+    {
+      "SourceFile": "src/tests/random.na"
+    },
+    {
+      "SourceFile": "src/tests/random-badargs.na",
+      "RuntimeError": "BadArguments"
+    },
+    {
+      "SourceFile": "src/tests/comparison.na"
+    },
+    {
+      "SourceFile": "src/tests/approx.na"
+    },
+    {
+      "SourceFile": "src/tests/min-max.na"
+    },
+    {
+      "SourceFile": "src/tests/branching-j.na"
+    },
+    {
+      "SourceFile": "src/tests/branching-ra.na"
+    },
+    {
+      "SourceFile": "src/tests/branching-beq.na"
+    },
+    {
+      "SourceFile": "src/tests/branching-bne.na"
+    },
+    {
+      "SourceFile": "src/tests/jump-invalid-line.na",
+      "RuntimeError": "InvalidJump"
+    },
+    {
+      "SourceFile": "src/tests/jump-invalid-label.na",
+      "CompilerError": "LabelNotFound"
+    },
+    {
+      "SourceFile": "src/tests/device-mov.na",
+      "CompilerError": "SyntaxError"
+    },
+    {
+      "SourceFile": "src/tests/device-oob.na",
+      "RuntimeError": "DeviceOutOfBound"
+    },
+    {
+      "SourceFile": "src/tests/device-unplugged.na",
+      "RuntimeError": "DeviceUnplugged"
+    },
+    {
+      "SourceFile": "src/tests/device-failure.na",
+      "RuntimeError": "DeviceFailed"
+    },
+    {
+      "SourceFile": "src/tests/device.na"
+    },
+    {
+      "SourceFile": "src/tests/watchdog.na",
+      "RuntimeError" : "WatchdogBark"
+    },
+    {
+      "SourceFile": "src/tests/include.na"
+    },
+    {
+      "SourceFile": "src/tests/include-filenotfound.na",
+      "CompilerError" : "FileNotFound"
+    }
+  ]
+}

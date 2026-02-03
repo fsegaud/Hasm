@@ -1,7 +1,7 @@
 namespace GameTest;
 
 // 0 -> KeyCode
-public class VirtualKeyboard : Hasm.IDevice
+public class VirtualKeyboard : Natrium.IDevice
 {
     public int KeyCode { get; set; }
     

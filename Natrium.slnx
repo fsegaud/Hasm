@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="GameTest/GameTest.csproj" />
+  <Project Path="Natrium.Devices/Natrium.Devices.csproj" />
+  <Project Path="Natrium.Test/Natrium.Test.csproj" />
+  <Project Path="Natrium/Natrium.csproj" />
+</Solution>

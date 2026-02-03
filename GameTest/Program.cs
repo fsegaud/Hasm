@@ -2,21 +2,21 @@
 
 public static class Program
 {
-    private const string SrcFile = "hasm-src/main.hasm";
+    private const string SrcFile = "src/main.na";
 
     public static void Main(string[] args)
     {
-        Action<Hasm.DebugData>? debugCallback = args.Contains("--debug") ? ConsoleHelper.DebugCallback : null;
+        Action<Natrium.DebugData>? debugCallback = args.Contains("--debug") ? ConsoleHelper.DebugCallback : null;
         
-        Hasm.Compiler compiler = new Hasm.Compiler();
-        Hasm.Program? program = compiler.Compile(File.ReadAllText(SrcFile), srcPath: Path.GetDirectoryName(SrcFile) ?? string.Empty);
+        Natrium.Compiler compiler = new Natrium.Compiler();
+        Natrium.Program? program = compiler.Compile(File.ReadAllText(SrcFile), srcPath: Path.GetDirectoryName(SrcFile) ?? string.Empty);
         if (program == null)
         {
             ConsoleHelper.PrintFailedTest(SrcFile, compiler.LastError, "Compiler");
             return;
         }
         
-        Hasm.Processor processor = new Hasm.Processor(16, 16, 2);
+        Natrium.Processor processor = new Natrium.Processor(16, 16, 2);
         VirtualScreen? screen = processor.PlugDevice(0, new VirtualScreen(24, 8));
         VirtualKeyboard? keyboard = processor.PlugDevice(1, new VirtualKeyboard());
         processor.Load(program, debugCallback);
