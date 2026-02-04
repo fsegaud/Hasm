@@ -1,9 +1,12 @@
-.require registers 8
+.require registers 2
 
 .define $i      r0
-.define $count  r1
+.define $beast  666
 
 ; add
-add $i 1 2
-assert $i 3 ; assert result
-die
+add  $i  444    221
+bne  end $beast 666
+    die
+    
+end:
+    ret

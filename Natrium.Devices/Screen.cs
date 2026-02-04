@@ -1,31 +1,71 @@
 namespace Natrium.Devices
 {
-    // 0: Append chat (w)
-    // 1: Clear (w)
+// 0 -> Index (W)
+// 1 -> Value (W)
+// 2 -> Clear (W)
+// 3 -> Width (R)
+// 4 -> Height (R)
     public class Screen : IDevice
     {
-        public string Display { get; private set; } = string.Empty;
-    
+        private uint _nextIndex;
+
+        public Screen(int width, int height)
+        {
+            Data = new char[width * height];
+            Width = width;
+            Height = height;
+        }
+
+        public char[] Data { get; }
+        public int Width { get; private set; }
+        public int Height { get; private set; }
+
         public bool TryReadValue(int index, out double value)
         {
-            value = 0d;
-            return false;
+            value = 0;
+            switch (index)
+            {
+                case 1:
+                    if (_nextIndex >= Data.Length)
+                        return false;
+                    value = Data[_nextIndex];
+                    break;
+
+                case 3:
+                    value = Width;
+                    break;
+
+                case 4:
+                    value = Height;
+                    break;
+
+                default:
+                    return false;
+            }
+
+            return true;
         }
 
         public bool TryWriteValue(int index, double value)
         {
             switch (index)
             {
-                case 0 :
-                    // Appends a character to the display.
-                    Display += (char)value;
+                case 0:
+                    if (value < 0 || value >= Data.Length)
+                        return false;
+                    _nextIndex = (uint)value;
                     break;
-            
-                case 1 :
-                    // Reset the display.
-                    Display = string.Empty;
+
+                case 1:
+                    if (_nextIndex >= Data.Length)
+                        return false;
+                    Data[_nextIndex] = (char)value;
                     break;
-            
+
+                case 2:
+                    System.Array.Fill(Data, ' ');
+                    break;
+
                 default:
                     return false;
             }

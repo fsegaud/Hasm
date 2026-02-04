@@ -17,8 +17,8 @@ public static class Program
         }
         
         Natrium.Processor processor = new Natrium.Processor(16, 16, 2);
-        VirtualScreen? screen = processor.PlugDevice(0, new VirtualScreen(24, 8));
-        VirtualKeyboard? keyboard = processor.PlugDevice(1, new VirtualKeyboard());
+        Natrium.Devices.Screen? screen = processor.PlugDevice(0, new Natrium.Devices.Screen(24, 8));
+        Natrium.Devices.Keyboard? keyboard = processor.PlugDevice(1, new Natrium.Devices.Keyboard());
         processor.Load(program, debugCallback);
 
         while (!processor.IsFinished)
