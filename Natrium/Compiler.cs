@@ -18,7 +18,9 @@ namespace Natrium
         
         public  Result LastError { get; private set; }
         
-        public Program? Compile(string input, BuildTarget buildTarget = BuildTarget.Debug, string srcPath = "")
+        public Func<string, string?>? ResolveInclusion { get; set; }
+        
+        public Program? Compile(string input, BuildTarget buildTarget = BuildTarget.Debug)
         {
             _lines = input.Split('\n');
             _rawLines = new string[_lines.Length];
@@ -39,7 +41,7 @@ namespace Natrium
             {
                 succeed &= Check(ParseSpaceAndTabs(index));
                 succeed &= Check(ParseComments(index));
-                succeed &= Check(ParseIncludes(index,srcPath));
+                succeed &= Check(ParseIncludes(index));
                 
                 // Check if include added new lines.
                 if (_skipLine.Length != _lines.Length)
@@ -204,7 +206,7 @@ namespace Natrium
             return true;
         }
         
-        private bool ParseIncludes(uint index, string srcPath)
+        private bool ParseIncludes(uint index)
         {
             if (_skipLine[index])
                 return true;
@@ -213,24 +215,20 @@ namespace Natrium
             if (match.Success)
             {
                 string src =  match.Groups["src"].Value;
-                src = Path.Combine(srcPath, src);
-                if (!File.Exists(src))
+                if (ResolveInclusion == null)
+                {
+                    LastError = new Result(Error.NoInclusionResolverProvided, index + 1);
+                    return false;
+                }
+
+                string? includeContent = ResolveInclusion(src);
+                if (string.IsNullOrEmpty(includeContent))
                 {
                     LastError = new Result(Error.FileNotFound, index + 1);
                     return false;
                 }
 
-                string[] includeLines;
-                try
-                {
-                    includeLines = File.ReadAllLines(src);
-                }
-                catch (IOException)
-                {
-                    LastError = new Result(Error.IoError, index + 1);
-                    return false;
-                }
-
+                string[] includeLines = includeContent.Split("\n");
                 string[] newLines = new string[_lines.Length + includeLines.Length];
                 Array.Copy(_lines, 0, newLines, 0, _lines.Length);
                 Array.Copy(includeLines, 0, newLines, _lines.Length, includeLines.Length);

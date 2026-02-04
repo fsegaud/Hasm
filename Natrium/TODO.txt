@@ -4,5 +4,3 @@
 - cleanup
 - binary operations
 - register indirection
-
-- compiler: get include through callback instead of directory arg.

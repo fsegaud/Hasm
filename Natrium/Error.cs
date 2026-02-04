@@ -8,8 +8,8 @@ namespace Natrium
         SyntaxError = 100,
         OperationNotSupported,
         LabelNotFound,
+        NoInclusionResolverProvided,
         FileNotFound,
-        IoError,
         
         // Processor
         ProgramNotLoaded = 200,
