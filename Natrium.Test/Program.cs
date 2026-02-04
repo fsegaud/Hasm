@@ -101,6 +101,8 @@ static class Program
     {
         try
         {
+            if (!filename.Contains('.'))
+                filename = $"{filename}.na";
             string str = File.ReadAllText(Path.Combine("src", filename));
             return str;
         }

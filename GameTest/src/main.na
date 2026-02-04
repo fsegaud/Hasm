@@ -1,10 +1,10 @@
-.include vars.na
-.include graphics.na
-.include input.na
-
-.require registers 10
+.require registers 12
 .require stack     8
 .require devices   2
+
+.include graphics
+.include input
+.patch   vars
 
 _main:
     ; init
