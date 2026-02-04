@@ -15,9 +15,9 @@ static class Program
             return -1;
         }
         
-        BuildTarget buildTarget = args.Contains("--target-debug") ? BuildTarget.Debug : BuildTarget.Release;
-        Action<DebugData>? debugCallback = args.Contains("--debug") ? ConsoleHelper.DebugCallback : null;
-        bool showInfo = args.Contains("--info");
+        BuildTarget buildTarget = args.Contains("--debug") || args.Contains("-d") ? BuildTarget.Debug : BuildTarget.Release;
+        Action<DebugData>? debugCallback = args.Contains("--trace") || args.Contains("-t") ? ConsoleHelper.DebugCallback : null;
+        bool showInfo = args.Contains("--info") || args.Contains("-i");
         int? watchdog = args.Contains("--no-watchdog") ? null : 0x1000;
         
         TestConfiguration? testConfiguration = TestConfiguration.Load(testConfigurationFile);

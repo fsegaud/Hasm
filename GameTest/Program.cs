@@ -6,7 +6,7 @@ public static class Program
 
     public static void Main(string[] args)
     {
-        Action<Natrium.DebugData>? debugCallback = args.Contains("--debug") ? ConsoleHelper.DebugCallback : null;
+        Action<Natrium.DebugData>? debugCallback = args.Contains("--trace") || args.Contains("-t") ? ConsoleHelper.DebugCallback : null;
         
         Natrium.Compiler compiler = new Natrium.Compiler();
         Natrium.Program? program = compiler.Compile(File.ReadAllText(SrcFile), srcPath: Path.GetDirectoryName(SrcFile) ?? string.Empty);
