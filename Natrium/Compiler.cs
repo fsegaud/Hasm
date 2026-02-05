@@ -895,10 +895,8 @@ namespace Natrium
                 
                 switch (opt)
                 {
-                    case "rdev": instruction.Operation = Operation.ReadWriteDevice; break;
-                    case "wdev": instruction.Operation = Operation.ReadWriteDevice; break;
-                    case "rd": instruction.Operation = Operation.ReadWriteDevice; break;
-                    case "wd": instruction.Operation = Operation.ReadWriteDevice; break;
+                    case "ld": instruction.Operation = Operation.ReadWriteDevice; break;
+                    case "sd": instruction.Operation = Operation.ReadWriteDevice; break;
                     default:
                     {
                         LastError = new Result(Error.OperationNotSupported, instruction);
@@ -1056,8 +1054,8 @@ namespace Natrium
             internal static readonly Regex DestinationOperations = new Regex(@"^(?<opt>inc|dec)\s+(?<opd>r\d+\b|ra|sp)$"); 
             internal static readonly Regex UnaryOperations = new Regex(@"^(?<opt>mov|sqrt|cos|sin|tan|acos|asin|atan|assert)\s+(?<opd>r\d+\b||ra|sp)\s+(?<opl>-?\d+[.]?\d*|r\d+\b|0x[0-9a-fA-F]+\b|ra|sp)$");
             internal static readonly Regex BinaryOperations = new Regex(@"^(?<opt>add|sub|mul|div|mod|pow|rnd|rndi|round|apx|min|max|eq|ne|neq|gt|gte|lt|lte)\s+(?<opd>r\d+\b|ra|sp)\s+(?<opl>-?\d+[.]?\d*|r\d+\b|0x[0-9a-fA-F]+\b|ra|sp)\s+(?<opr>-?\d+[.]?\d*|r\d+\b|0x[0-9a-fA-F]+\b|ra|sp)$");
-            internal static readonly Regex ReadDeviceOperations = new Regex(@"^(?<opt>rdev|rd)\s+(?<opd>r\d+\b)\s+(?<opl>d\d+\.\d+)$");
-            internal static readonly Regex WriteDeviceOperations = new Regex(@"^(?<opt>wdev|wd)\s+(?<opd>d\d+\.\d+\b)\s+(?<opl>r\d+\b|-?\d+[.]?\d*|r\d+\b|0x[0-9a-fA-F]+\b)$");
+            internal static readonly Regex ReadDeviceOperations = new Regex(@"^(?<opt>ld)\s+(?<opd>r\d+\b)\s+(?<opl>d\d+\.\d+)$");
+            internal static readonly Regex WriteDeviceOperations = new Regex(@"^(?<opt>sd)\s+(?<opd>d\d+\.\d+\b)\s+(?<opl>r\d+\b|-?\d+[.]?\d*|r\d+\b|0x[0-9a-fA-F]+\b)$");
 
 #if NATRIUM_FEATURE_MEMORY
             internal static readonly Regex AllocateMemory = new Regex(@"^(?<opt>malloc)\s+(?<opd>r\d+\b)\s+(?<opl>\d+)$"); 

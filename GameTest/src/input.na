@@ -1,5 +1,5 @@
 input_process_key:
-    rd  r4   $d_kb
+    ld  r4   $d_kb
     beq _end r4 $KEY_Q
     
     ; apply movement
