@@ -19,6 +19,7 @@
 .define  $scr_h         r11
 .define  $ex            r12
 .define  $ey            r13
+.define  $border_col    r14
 .define  $d_scr_i       d0.0
 .define  $d_scr_v       d0.1
 .define  $d_scr_c       d0.2

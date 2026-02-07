@@ -8,6 +8,7 @@
 
 _main:
     ; init
+    mov $border_col 0xca
     mov $px 1  ; player pos
     mov $py 1
     mov $ex 16 ; enemy pos
@@ -20,8 +21,9 @@ _main:
     ; update
     _gameloop:
         jal   input_process_key
-        jal   _check_seed
         jal   _move_enemy
+        jal   _check_seed
+        jal   _check_death
         jal   graphics_draw
         yield
         j     _gameloop
@@ -37,6 +39,14 @@ _check_seed:
     pop  ra
     j   ra
 ; _check_seed
+
+_check_death:
+    eq  r4 $px $ex
+    eq  r5 $py $ey
+    add r4 r4 r5
+    beq _game_over r4 2
+    j ra
+;_check_death
 
 _spawn_seed:
     mov  $sx $scr_w
@@ -61,6 +71,13 @@ _move_enemy:
     add $ey $ey r5
     j ra
 ; _move_enemy
+
+_game_over:
+    mov $border_col 0x1a
+    jal graphics_game_over
+    sleep 1000
+    j _end
+;_game_over
 
 _end:
     ret
