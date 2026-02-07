@@ -20,6 +20,7 @@
 .define  $d_scr_i       d0.0
 .define  $d_scr_v       d0.1
 .define  $d_scr_c       d0.2
-.define  $d_scr_w       d0.3
-.define  $d_scr_h       d0.4
+.define  $d_scr_a       d0.3
+.define  $d_scr_w       d0.4
+.define  $d_scr_h       d0.5
 .define  $d_kb          d1.0

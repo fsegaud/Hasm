@@ -3,8 +3,9 @@ namespace Natrium.Devices
 // 0 -> Index (W)
 // 1 -> Value (W)
 // 2 -> Clear (W)
-// 3 -> Width (R)
-// 4 -> Height (R)
+// 3 -> AutoIncrement (W)
+// 4 -> Width (R)
+// 5 -> Height (R)
     public class Screen : IDevice
     {
         private uint _nextIndex;
@@ -20,6 +21,8 @@ namespace Natrium.Devices
         public int Width { get; private set; }
         public int Height { get; private set; }
 
+        private bool _autoIncrement;
+
         public bool TryReadValue(int index, out double value)
         {
             value = 0;
@@ -31,11 +34,11 @@ namespace Natrium.Devices
                     value = Data[_nextIndex];
                     break;
 
-                case 3:
+                case 4:
                     value = Width;
                     break;
 
-                case 4:
+                case 5:
                     value = Height;
                     break;
 
@@ -60,10 +63,16 @@ namespace Natrium.Devices
                     if (_nextIndex >= Data.Length)
                         return false;
                     Data[_nextIndex] = (char)value;
+                    if (_autoIncrement)
+                        _nextIndex++;
                     break;
 
                 case 2:
                     System.Array.Fill(Data, ' ');
+                    break;
+                
+                case 3 :
+                    _autoIncrement = value > 0;
                     break;
 
                 default:

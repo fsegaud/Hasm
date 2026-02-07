@@ -4,11 +4,13 @@
     // 1: value (rw)
     // 2: length (r)
     // 3: read_only (rw)
+    // 4: auto_inc (w)
     public class Eeprom : IDevice
     {
         private readonly double[] _memory;
         private uint _nextIndex;
         private bool _readOnly;
+        private bool _autoIncrement;
 
         public Eeprom(int size, bool isReadOnly = false)
         {
@@ -62,10 +64,16 @@
                     if (_nextIndex >= _memory.Length || _readOnly)
                         return false;
                     _memory[_nextIndex] = value;
+                    if (_autoIncrement)
+                        _nextIndex++;
                     break;
             
                 case 3:
                     _readOnly = value > 0d;
+                    break;
+                
+                case 4:
+                    _autoIncrement = value > 0d;
                     break;
             
                 default:
